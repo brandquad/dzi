@@ -1,4 +1,4 @@
-package dzi
+package dzi_processing
 
 var CMYK = map[string]string{
 	"cyan":                    "#00a3d3",
