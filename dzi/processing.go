@@ -35,8 +35,8 @@ type IncomeConfig struct {
 
 func Processing(url string, assetId int, c IncomeConfig) (*Manifest, error) {
 	filename := path.Base(url)
-	//_tmp := os.TempDir()
-	_tmp := "./_tmp"
+	_tmp := os.TempDir()
+	//_tmp := "./_tmp"
 	if err := os.MkdirAll(_tmp, DefaultFolderPerm); err != nil {
 		return nil, err
 	}
