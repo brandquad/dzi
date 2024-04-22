@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func syncToS3(assetId int, tmp string, c IncomeConfig) error {
+func syncToS3(assetId int, tmp string, c Config) error {
 	log.Println("Copy to S3:", c.S3Host, c.S3Bucket)
 	var err error
 

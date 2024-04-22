@@ -20,7 +20,7 @@ const DefaultFolderPerm = 0777
 var rgbColormodes = []string{"srgb", "rgb", "rgb16"}
 var allowedColormodes = append([]string{"cmyk"}, rgbColormodes...)
 
-type IncomeConfig struct {
+type Config struct {
 	S3Host             string
 	S3Key              string
 	S3Secret           string
@@ -33,7 +33,7 @@ type IncomeConfig struct {
 	DebugMode          bool
 }
 
-func Processing(url string, assetId int, c IncomeConfig) (*Manifest, error) {
+func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	filename := path.Base(url)
 	_tmp := os.TempDir()
 	//_tmp := "./_tmp"
@@ -436,7 +436,7 @@ func vipsProbe(path string, params ...string) (map[string]string, error) {
 	return result, nil
 }
 
-func makeDZI(income string, outcome string, c IncomeConfig) error {
+func makeDZI(income string, outcome string, c Config) error {
 	entry, err := os.ReadDir(income)
 	if err != nil {
 		return err
