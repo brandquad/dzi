@@ -36,11 +36,6 @@ type Config struct {
 func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	filename := path.Base(url)
 	_tmp := os.TempDir()
-	//_tmp := "./_tmp"
-	if err := os.MkdirAll(_tmp, DefaultFolderPerm); err != nil {
-		return nil, err
-	}
-
 	tmp := path.Join(_tmp, strconv.Itoa(assetId))
 
 	ext := path.Ext(filename)
