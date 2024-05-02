@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/lucasb-eyer/go-colorful"
+	"log"
 	"os"
 	"path"
 )
@@ -22,6 +23,8 @@ func colorize(e *entryInfo, outputColorized, outputBw, leads1000, covers, iccPro
 	}()
 
 	for _, entry := range e.Swatches {
+
+		log.Println("Colorize:", entry.Name)
 
 		ref, err = vips.LoadImageFromFile(entry.Filepath, nil)
 		if err != nil {
@@ -68,6 +71,7 @@ func colorize(e *entryInfo, outputColorized, outputBw, leads1000, covers, iccPro
 
 		}
 
+		log.Println("Covers for:", entry.Name)
 		leads1000Path := path.Join(leads1000, fmt.Sprintf("%s.png", entry.Filename()))
 		coverPath := path.Join(covers, fmt.Sprintf("%s.png", entry.Filename()))
 		if ref.ColorSpace() == vips.InterpretationCMYK {
