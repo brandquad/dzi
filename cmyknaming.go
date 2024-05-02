@@ -1,4 +1,4 @@
-package dzi_processing
+package dzi
 
 var CMYK = map[string]string{
 	"cyan":                    "#00a3d3",
@@ -3467,4 +3467,5 @@ var CMYK = map[string]string{
 	"pantone warm red u":      "#ff665b",
 	"pantone yellow c":        "#ffdd00",
 	"pantone yellow u":        "#ffe700",
+	"pantone 877 c":           "#8a8d8f",
 }

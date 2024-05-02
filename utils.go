@@ -1,4 +1,4 @@
-package dzi_processing
+package dzi
 
 import (
 	"errors"
