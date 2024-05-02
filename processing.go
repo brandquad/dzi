@@ -42,15 +42,14 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	_tmp := os.TempDir()
 	//_tmp := "_tmp"
 
-	if _, err := os.ReadDir(_tmp); err == nil {
-		err = os.RemoveAll(_tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
+	//if _, err := os.ReadDir(_tmp); err == nil {
+	//	err = os.RemoveAll(_tmp)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 
 	tmp := path.Join(_tmp, strconv.Itoa(assetId))
-
 	leads := path.Join(tmp, "leads")
 	dzi := path.Join(tmp, "dzi")
 	dziBw := path.Join(tmp, "dzi_bw")
@@ -170,17 +169,17 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 
 	defer func() {
-		//if !c.DebugMode {
-		//	if err := baseFile.Close(); err != nil {
-		//		log.Printf("Error closing file: %v", err)
-		//	}
-		//	if err := os.Remove(originalFilepath); err != nil {
-		//		log.Printf("Error removing file: %v", originalFilepath)
-		//	}
-		//	if err := os.RemoveAll(tmp); err != nil {
-		//		log.Printf("Error removing directory: %v", tmp)
-		//	}
-		//}
+		if !c.DebugMode {
+			if err := baseFile.Close(); err != nil {
+				log.Printf("Error closing file: %v", err)
+			}
+			if err := os.Remove(originalFilepath); err != nil {
+				log.Printf("Error removing file: %v", originalFilepath)
+			}
+			if err := os.RemoveAll(tmp); err != nil {
+				log.Printf("Error removing directory: %v", tmp)
+			}
+		}
 	}()
 
 	return manifest, nil
