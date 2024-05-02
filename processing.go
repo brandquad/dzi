@@ -39,8 +39,8 @@ func prepareFolders(folders ...string) error {
 
 func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	filename := path.Base(url)
-	//_tmp := os.TempDir()
-	_tmp := "_tmp"
+	_tmp := os.TempDir()
+	//_tmp := "_tmp"
 
 	if _, err := os.ReadDir(_tmp); err == nil {
 		err = os.RemoveAll(_tmp)
@@ -122,7 +122,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 
 	log.Println("Make DZI - colors")
-	if err = makeDZI(leads, dzi, c); err != nil {
+	if err = makeDZI(channels, dzi, c); err != nil {
 		return nil, err
 	}
 
