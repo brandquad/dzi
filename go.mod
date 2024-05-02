@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/nerdtakula/poppler v0.0.0-20201108072532-692805b028a8 // indirect
 	golang.org/x/image v0.10.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
