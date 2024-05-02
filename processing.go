@@ -40,8 +40,8 @@ func prepareFolders(folders ...string) error {
 func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	filename := path.Base(url)
 	_tmp := os.TempDir()
-	//_tmp := "_tmp"
 
+	//_tmp := "_tmp"
 	//if _, err := os.ReadDir(_tmp); err == nil {
 	//	err = os.RemoveAll(_tmp)
 	//	if err != nil {

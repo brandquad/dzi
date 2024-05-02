@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"time"
 )
 
 func colorize(e *entryInfo, outputColorized, outputBw, leads1000, covers, iccProfile string, coverWidth int) error {
@@ -83,21 +84,31 @@ func colorize(e *entryInfo, outputColorized, outputBw, leads1000, covers, iccPro
 			}
 		}
 
+		st := time.Now()
+
 		if err = ref.Thumbnail(1000, 1000, vips.InterestingAll); err != nil {
 			return err
 		}
+
+		log.Println("Covers 1000 for:", entry.Name, time.Since(st).Microseconds())
 
 		if err = toPng(ref, leads1000Path); err != nil {
 			return err
 		}
 
+		log.Println("toPNG 1000 for:", entry.Name, time.Since(st).Microseconds())
+
 		if err = ref.Thumbnail(coverWidth, coverWidth, vips.InterestingAll); err != nil {
 			return err
 		}
 
+		log.Println("Covers 200 for:", entry.Name, time.Since(st).Microseconds())
+
 		if err = toPng(ref, coverPath); err != nil {
 			return err
 		}
+
+		log.Println("toPNG 200 for:", entry.Name, time.Since(st).Microseconds())
 
 	}
 
