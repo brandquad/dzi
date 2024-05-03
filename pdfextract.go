@@ -50,6 +50,18 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 		return nil, err
 	}
 
+	if d.Unit == "Millimeters" {
+		d.Unit = "mm"
+	}
+
+	if d.Unit == "Centimeters" {
+		d.Unit = "cm"
+	}
+
+	if d.Unit == "Inches" {
+		d.Unit = "in"
+	}
+
 	info := &entryInfo{
 		Width:     d.W,
 		Height:    d.H,
@@ -58,9 +70,9 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 		Swatches:  make([]swatch, 0),
 	}
 
-	info.Width = d.W
-	info.Height = d.H
-	info.Unit = d.Unit
+	//info.Width = d.W
+	//info.Height = d.H
+	//info.Unit = d.Unit
 
 	swatchMap := make(map[string]swatch)
 	for _, s := range d.SwatchGroups {
