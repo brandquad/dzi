@@ -86,39 +86,6 @@ func colorize(e *entryInfo, outputColorized, outputBw, leads1000, covers, iccPro
 			return err
 		}
 
-		//if ref.ColorSpace() == vips.InterpretationCMYK {
-		//	if err = ref.TransformICCProfile(iccProfile); err != nil {
-		//		return err
-		//	}
-		//	if err = ref.ToColorSpace(vips.InterpretationSRGB); err != nil {
-		//		return err
-		//	}
-		//}
-		//
-
-		//
-		//if err = ref.Thumbnail(1000, 1000, vips.InterestingAll); err != nil {
-		//	return err
-		//}
-		//
-		//log.Println("Covers 1000 for:", entry.Name, time.Since(st).Microseconds())
-		//
-		//if err = toPng(ref, leads1000Path); err != nil {
-		//	return err
-		//}
-		//
-		//log.Println("toPNG 1000 for:", entry.Name, time.Since(st).Microseconds())
-		//
-		//if err = ref.Thumbnail(coverWidth, coverWidth, vips.InterestingAll); err != nil {
-		//	return err
-		//}
-		//
-		//log.Println("Covers 200 for:", entry.Name, time.Since(st).Microseconds())
-		//
-		//if err = toPng(ref, coverPath); err != nil {
-		//	return err
-		//}
-
 		log.Println("Covers for:", entry.Name, time.Since(st).Microseconds())
 
 	}
