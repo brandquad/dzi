@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"time"
 )
 
@@ -75,40 +76,50 @@ func colorize(e *entryInfo, outputColorized, outputBw, leads1000, covers, iccPro
 		log.Println("Covers for:", entry.Name)
 		leads1000Path := path.Join(leads1000, fmt.Sprintf("%s.png", entry.Filename()))
 		coverPath := path.Join(covers, fmt.Sprintf("%s.png", entry.Filename()))
-		if ref.ColorSpace() == vips.InterpretationCMYK {
-			if err = ref.TransformICCProfile(iccProfile); err != nil {
-				return err
-			}
-			if err = ref.ToColorSpace(vips.InterpretationSRGB); err != nil {
-				return err
-			}
-		}
 
 		st := time.Now()
-
-		if err = ref.Thumbnail(1000, 1000, vips.InterestingAll); err != nil {
+		if _, err = execCmd("vips", "thumbnail", entry.Filepath, leads1000Path, "1000"); err != nil {
 			return err
 		}
 
-		log.Println("Covers 1000 for:", entry.Name, time.Since(st).Microseconds())
-
-		if err = toPng(ref, leads1000Path); err != nil {
+		if _, err = execCmd("vips", "thumbnail", entry.Filepath, coverPath, strconv.Itoa(coverWidth)); err != nil {
 			return err
 		}
 
-		log.Println("toPNG 1000 for:", entry.Name, time.Since(st).Microseconds())
+		//if ref.ColorSpace() == vips.InterpretationCMYK {
+		//	if err = ref.TransformICCProfile(iccProfile); err != nil {
+		//		return err
+		//	}
+		//	if err = ref.ToColorSpace(vips.InterpretationSRGB); err != nil {
+		//		return err
+		//	}
+		//}
+		//
 
-		if err = ref.Thumbnail(coverWidth, coverWidth, vips.InterestingAll); err != nil {
-			return err
-		}
+		//
+		//if err = ref.Thumbnail(1000, 1000, vips.InterestingAll); err != nil {
+		//	return err
+		//}
+		//
+		//log.Println("Covers 1000 for:", entry.Name, time.Since(st).Microseconds())
+		//
+		//if err = toPng(ref, leads1000Path); err != nil {
+		//	return err
+		//}
+		//
+		//log.Println("toPNG 1000 for:", entry.Name, time.Since(st).Microseconds())
+		//
+		//if err = ref.Thumbnail(coverWidth, coverWidth, vips.InterestingAll); err != nil {
+		//	return err
+		//}
+		//
+		//log.Println("Covers 200 for:", entry.Name, time.Since(st).Microseconds())
+		//
+		//if err = toPng(ref, coverPath); err != nil {
+		//	return err
+		//}
 
-		log.Println("Covers 200 for:", entry.Name, time.Since(st).Microseconds())
-
-		if err = toPng(ref, coverPath); err != nil {
-			return err
-		}
-
-		log.Println("toPNG 200 for:", entry.Name, time.Since(st).Microseconds())
+		log.Println("Covers for:", entry.Name, time.Since(st).Microseconds())
 
 	}
 
