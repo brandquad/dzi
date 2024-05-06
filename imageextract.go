@@ -67,7 +67,7 @@ func extractImage(filename, basename, output, iccPath string) (*entryInfo, error
 	}
 	info.Swatches = append(info.Swatches, swatch{
 		Filepath: rgbOutput,
-		Name:     "Colot",
+		Name:     "Color",
 		Type:     Final,
 		NeedMate: false,
 	})
