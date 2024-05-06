@@ -141,10 +141,11 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		TileSize:   c.TileSize,
 	}
 
-	var channelsArr = make([]string, len(info.Swatches)-1)
-	for idx, s := range info.Swatches {
+	var channelsArr = make([]string, 0)
+	for _, s := range info.Swatches {
 		if s.Type != Final {
-			channelsArr[idx] = s.Name
+			channelsArr = append(channelsArr, s.Name)
+			//channelsArr[idx] = s.Name
 		}
 	}
 	var manifest = &Manifest{
