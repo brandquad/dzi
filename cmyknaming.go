@@ -9,6 +9,7 @@ var CMYK = map[string]string{
 	"red":                     "#ff0000",
 	"white":                   "#ffffff",
 	"black":                   "#131413",
+	"alpha":                   "#ffffff",
 	"pantone 100 c":           "#f7ea5f",
 	"pantone 100 u":           "#fef27e",
 	"pantone 101 c":           "#f8e946",

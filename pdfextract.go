@@ -70,10 +70,6 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 		Swatches:  make([]swatch, 0),
 	}
 
-	//info.Width = d.W
-	//info.Height = d.H
-	//info.Unit = d.Unit
-
 	swatchMap := make(map[string]swatch)
 	for _, s := range d.SwatchGroups {
 		var c []int

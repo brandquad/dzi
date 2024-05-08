@@ -91,12 +91,12 @@ func extractImage(filename, basename, output, iccPath string) (*entryInfo, error
 			swatchName = "Alpha"
 		}
 
-		if err := band.Invert(); err != nil {
+		if err = band.Invert(); err != nil {
 			return nil, err
 		}
 
 		outputPath := path.Join(output, fmt.Sprintf("%s(%s).tiff", basename, swatchName))
-		if err := toTiff(band, outputPath); err != nil {
+		if err = toTiff(band, outputPath); err != nil {
 			return nil, err
 		}
 
