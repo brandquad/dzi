@@ -26,6 +26,7 @@ type Manifest struct {
 	Mode      string   `json:"mode"`
 	Size      DziSize  `json:"size"`
 	Channels  []string `json:"channels"`
+	Swatches  []swatch `json:"swatches,omitempty"`
 }
 
 func (b *Manifest) TileSize() int {

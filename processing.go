@@ -39,15 +39,15 @@ func prepareFolders(folders ...string) error {
 
 func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	filename := path.Base(url)
-	_tmp := os.TempDir()
+	//_tmp := os.TempDir()
 
-	//_tmp := "_tmp"
-	//if _, err := os.ReadDir(_tmp); err == nil {
-	//	err = os.RemoveAll(_tmp)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+	_tmp := "_tmp"
+	if _, err := os.ReadDir(_tmp); err == nil {
+		err = os.RemoveAll(_tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	tmp := path.Join(_tmp, strconv.Itoa(assetId))
 	leads := path.Join(tmp, "leads")
@@ -145,9 +145,9 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	for _, s := range info.Swatches {
 		if s.Type != Final {
 			channelsArr = append(channelsArr, s.Name)
-			//channelsArr[idx] = s.Name
 		}
 	}
+
 	var manifest = &Manifest{
 		ID:        strconv.Itoa(assetId),
 		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
@@ -157,6 +157,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		Mode:      Colormode,
 		Size:      pSize,
 		Channels:  channelsArr,
+		Swatches:  info.Swatches,
 	}
 	buff, err := json.Marshal(manifest)
 	if err != nil {
@@ -172,17 +173,17 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 
 	defer func() {
-		if !c.DebugMode {
-			if err := baseFile.Close(); err != nil {
-				log.Printf("Error closing file: %v", err)
-			}
-			if err := os.Remove(originalFilepath); err != nil {
-				log.Printf("Error removing file: %v", originalFilepath)
-			}
-			if err := os.RemoveAll(tmp); err != nil {
-				log.Printf("Error removing directory: %v", tmp)
-			}
-		}
+		//if !c.DebugMode {
+		//	if err := baseFile.Close(); err != nil {
+		//		log.Printf("Error closing file: %v", err)
+		//	}
+		//	if err := os.Remove(originalFilepath); err != nil {
+		//		log.Printf("Error removing file: %v", originalFilepath)
+		//	}
+		//	if err := os.RemoveAll(tmp); err != nil {
+		//		log.Printf("Error removing directory: %v", tmp)
+		//	}
+		//}
 	}()
 
 	return manifest, nil
