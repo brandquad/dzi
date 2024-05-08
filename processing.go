@@ -39,15 +39,15 @@ func prepareFolders(folders ...string) error {
 
 func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	filename := path.Base(url)
-	//_tmp := os.TempDir()
+	_tmp := os.TempDir()
 
-	_tmp := "_tmp"
-	if _, err := os.ReadDir(_tmp); err == nil {
-		err = os.RemoveAll(_tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
+	//_tmp := "_tmp"
+	//if _, err := os.ReadDir(_tmp); err == nil {
+	//	err = os.RemoveAll(_tmp)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 
 	tmp := path.Join(_tmp, strconv.Itoa(assetId))
 	leads := path.Join(tmp, "leads")
@@ -80,9 +80,6 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 
 	var Colormode string
 
-	//log.Println(sss, err)
-
-	//probe, err := vipsProbe(originalFilepath, "vips-loader")
 	probe, err := vips.LoadImageFromFile(originalFilepath, nil)
 	if err != nil {
 		return nil, err
@@ -173,44 +170,20 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 
 	defer func() {
-		//if !c.DebugMode {
-		//	if err := baseFile.Close(); err != nil {
-		//		log.Printf("Error closing file: %v", err)
-		//	}
-		//	if err := os.Remove(originalFilepath); err != nil {
-		//		log.Printf("Error removing file: %v", originalFilepath)
-		//	}
-		//	if err := os.RemoveAll(tmp); err != nil {
-		//		log.Printf("Error removing directory: %v", tmp)
-		//	}
-		//}
+		if !c.DebugMode {
+			if err := baseFile.Close(); err != nil {
+				log.Printf("Error closing file: %v", err)
+			}
+			if err := os.Remove(originalFilepath); err != nil {
+				log.Printf("Error removing file: %v", originalFilepath)
+			}
+			if err := os.RemoveAll(tmp); err != nil {
+				log.Printf("Error removing directory: %v", tmp)
+			}
+		}
 	}()
 
 	return manifest, nil
-}
-
-func vipsProbe(path string, params ...string) (map[string]string, error) {
-	result := make(map[string]string)
-
-	output, err := execCmd("vipsheader", "-a", path)
-	if err != nil {
-		return nil, err
-	}
-	for _, line := range strings.Split(string(output), "\n") {
-		for _, p := range params {
-			if f, ok := extractField(line, fmt.Sprintf("%s:", p)); ok {
-				result[p] = f
-			}
-		}
-	}
-
-	for _, p := range params {
-		if _, ok := result[p]; !ok {
-			return nil, fmt.Errorf("param %s not found", p)
-		}
-	}
-
-	return result, nil
 }
 
 func makeDZI(income string, outcome string, c Config) error {
