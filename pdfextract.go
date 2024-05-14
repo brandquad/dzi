@@ -3,15 +3,20 @@ package dzi
 import (
 	"encoding/xml"
 	"fmt"
+	poppler2 "github.com/johbar/go-poppler"
 	"github.com/nerdtakula/poppler"
 	"os"
 	"path"
 	"strings"
 )
 
+const pt2mm = 2.8346456692913
+const pt2cm = pt2mm * 10
+const pt2in = 0.0138888889
+
 type pdfMeta struct {
-	W            float64  `xml:"RDF>Description>MaxPageSize>w"`
-	H            float64  `xml:"RDF>Description>MaxPageSize>h"`
+	W            float64
+	H            float64
 	Unit         string   `xml:"RDF>Description>MaxPageSize>unit"`
 	PlateNames   []string `xml:"RDF>Description>PlateNames>Seq>li"`
 	SwatchGroups []struct {
@@ -35,14 +40,22 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 
 	outputResult := path.Join(output, fmt.Sprintf("%s.tiff", basename))
 
-	if err := runGS(filepath, outputResult, resolution); err != nil {
+	gopopDoc, err := poppler2.Open(filepath)
+	if err != nil {
 		return nil, err
+	}
+	var wPt, hPt float64
+	for i := 0; i < gopopDoc.GetNPages(); i++ {
+		p := gopopDoc.GetPage(i)
+		wPt, hPt = p.Size()
+		break
 	}
 
 	doc, err := poppler.NewFromFile(filepath, "")
 	if err != nil {
 		panic(err)
 	}
+
 	xmlString := doc.GetMetadata()
 	var d pdfMeta
 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
@@ -52,14 +65,24 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 
 	if d.Unit == "Millimeters" {
 		d.Unit = "mm"
+		d.W = wPt / pt2mm
+		d.H = hPt / pt2mm
 	}
 
 	if d.Unit == "Centimeters" {
 		d.Unit = "cm"
+		d.W = wPt / pt2cm
+		d.H = hPt / pt2cm
 	}
 
 	if d.Unit == "Inches" {
 		d.Unit = "in"
+		d.W = wPt / pt2in
+		d.H = hPt / pt2in
+	}
+
+	if err = runGS(filepath, outputResult, resolution); err != nil {
+		return nil, err
 	}
 
 	info := &entryInfo{
