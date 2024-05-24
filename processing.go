@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/davidbyttow/govips/v2/vips"
+	"github.com/google/uuid"
 	"log"
 	"os"
 	"path"
@@ -63,6 +64,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 
 	ext := path.Ext(filename)
 	basename := strings.TrimSuffix(filename, ext)
+	basename = uuid.New().String()
 	ext = strings.TrimPrefix(ext, ".")
 
 	log.Println("Resolution:", c.Resolution)

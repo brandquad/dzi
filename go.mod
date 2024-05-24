@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/davidbyttow/govips/v2 v2.14.0
+	github.com/google/uuid v1.6.0
 	github.com/johbar/go-poppler v1.0.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
