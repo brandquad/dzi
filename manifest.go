@@ -38,6 +38,24 @@ type Manifest struct {
 	Swatches   []*Swatch `json:"swatches,omitempty"`
 }
 
+func (b *Manifest) toMM(unit string, x float64) float64 {
+	switch unit {
+	case "pts":
+		return x * 0.3527777778
+	case "pt":
+		return x * 0.3527777778
+	case "mm":
+		return x
+	case "Millimeters":
+		return x
+	case "cm":
+		return x * 100
+	case "in":
+		return x * 25.4
+	}
+	return x
+}
+
 func (b *Manifest) Tilesize() int {
 	if b.TileSize == "" {
 		return 255
@@ -58,49 +76,30 @@ func (b *Manifest) GetCoverSize() int {
 	return int(s)
 }
 
-func (b *Manifest) GetWidth(pageNum int) float64 {
-	return b.toFloat(b.GetPageByNum(pageNum).Size.Width)
+func (b *Manifest) GetWidth(page *Page) float64 {
+	return b.toFloat(page.Size.Width)
 }
 
-func (b *Manifest) toMM(unit string, x float64) float64 {
-	switch unit {
-	case "pts":
-		return x * 0.3527777778
-	case "pt":
-		return x * 0.3527777778
-	case "mm":
-		return x
-	case "Millimeters":
-		return x
-	case "cm":
-		return x * 100
-	case "in":
-		return x * 25.4
+func (b *Manifest) GetWidthPixels(page *Page) float64 {
+	if page.Size.Units == "px" {
+		return b.GetWidth(page)
 	}
-	return x
-
+	return math.Ceil(b.toMM(page.Size.Units, b.GetWidth(page)) * (b.GetDPI(page) / 25.4))
 }
 
-func (b *Manifest) GetWidthPixels(pageNum int) float64 {
-	if b.GetPageByNum(pageNum).Size.Units == "px" {
-		return b.GetWidth(pageNum)
+func (b *Manifest) GetHeightPixels(page *Page) float64 {
+	if page.Size.Units == "px" {
+		return b.GetHeight(page)
 	}
-	return math.Ceil(b.toMM(b.GetPageByNum(pageNum).Size.Units, b.GetWidth(pageNum)) * (b.GetDPI(pageNum) / 25.4))
+	return math.Ceil(b.toMM(page.Size.Units, b.GetHeight(page)) * (b.GetDPI(page) / 25.4))
 }
 
-func (b *Manifest) GetHeightPixels(pageNum int) float64 {
-	if b.GetPageByNum(pageNum).Size.Units == "px" {
-		return b.GetHeight(pageNum)
-	}
-	return math.Ceil(b.toMM(b.GetPageByNum(pageNum).Size.Units, b.GetHeight(pageNum)) * (b.GetDPI(pageNum) / 25.4))
+func (b *Manifest) GetHeight(page *Page) float64 {
+	return b.toFloat(page.Size.Height)
 }
 
-func (b *Manifest) GetHeight(pageNum int) float64 {
-	return b.toFloat(b.GetPageByNum(pageNum).Size.Height)
-}
-
-func (b *Manifest) GetDPI(pageNum int) float64 {
-	if b.GetPageByNum(pageNum).Size.Units == "px" {
+func (b *Manifest) GetDPI(page *Page) float64 {
+	if page.Size.Units == "px" {
 		return 1
 	}
 	return b.toFloat(b.Dpi)
