@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 )
 
@@ -114,6 +115,10 @@ func syncToS3(assetId int, tmp string, c Config) error {
 }
 
 func cp(from, to string) error {
+	dir, _ := path.Split(to)
+	if err := os.MkdirAll(dir, DefaultFolderPerm); err != nil {
+		return err
+	}
 	_, err := execCmd("cp", from, to)
 	return err
 }

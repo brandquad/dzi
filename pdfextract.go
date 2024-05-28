@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	poppler2 "github.com/johbar/go-poppler"
-	"github.com/nerdtakula/poppler"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -15,7 +15,9 @@ const pt2cm = pt2mm * 10
 const pt2in = 0.0138888889
 
 type pdfEgMeta struct {
-	Unit string `xml:"RDF>Description>units"`
+	Unit string  `xml:"RDF>Description>units"`
+	W    float64 `xml:"RDF>Description>vsize"`
+	H    float64 `xml:"RDF>Description>hsize"`
 	Inks []struct {
 		Name   string  `xml:"name"`
 		Type   string  `xml:"type"`
@@ -27,7 +29,7 @@ type pdfEgMeta struct {
 	} `xml:"RDF>Description>inks>Seq>li"`
 }
 
-func esko2swatch(name, egname, egtype, book string, nr, ng, nb float64) swatch {
+func esko2swatch(name, egname, egtype, book string, nr, ng, nb float64) Swatch {
 	var swatchName = name
 	if egtype == "pantone" {
 		switch book {
@@ -65,7 +67,7 @@ func esko2swatch(name, egname, egtype, book string, nr, ng, nb float64) swatch {
 	var G = 255 * ng / 1
 	var B = 255 * nb / 1
 
-	return swatch{
+	return Swatch{
 		Filepath: "",
 		Name:     swatchName,
 		RBG:      fmt.Sprintf("#%02x%02x%02x", int(R), int(G), int(B)),
@@ -96,42 +98,49 @@ type pdfMeta struct {
 	} `xml:"RDF>Description>SwatchGroups>Seq>li>Colorants>Seq>li"`
 }
 
-func extractPDF(filepath string, basename string, output string, resolution int) (*entryInfo, error) {
-
-	outputResult := path.Join(output, fmt.Sprintf("%s.tiff", basename))
-
-	gopopDoc, err := poppler2.Open(filepath)
-	if err != nil {
-		return nil, err
+func extractText(filepath string, pageNum int) (string, error) {
+	var result []string
+	buffer, err := execCmd("mutool", "draw", "-q", "-F", "stext.json", filepath, fmt.Sprintf("%d", pageNum))
+	for _, line := range strings.Split(string(buffer), "\n") {
+		if strings.HasPrefix(line, "warning:") {
+			continue
+		}
+		result = append(result, line)
 	}
+	return strings.Join(result, ""), err
+}
+
+func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]Swatch, error) {
 	var wPt, hPt float64
-	for i := 0; i < gopopDoc.GetNPages(); i++ {
-		p := gopopDoc.GetPage(i)
-		wPt, hPt = p.Size()
-		break
-	}
+	p := doc.GetPage(pageNum)
+	wPt, hPt = p.Size()
 
-	doc, err := poppler.NewFromFile(filepath, "")
-	if err != nil {
-		panic(err)
-	}
-
-	xmlString := doc.GetMetadata()
+	xmlString := doc.Info().Metadata
 	var d pdfMeta
 	var eg pdfEgMeta
 
-	decoder := xml.NewDecoder(strings.NewReader(xmlString))
-	if err = decoder.Decode(&d); err != nil {
-		return nil, err
-	}
-	decoder = xml.NewDecoder(strings.NewReader(xmlString))
+	if strings.TrimSpace(xmlString) != "" {
 
-	if err = decoder.Decode(&eg); err != nil {
-		return nil, err
+		decoder := xml.NewDecoder(strings.NewReader(xmlString))
+		if err := decoder.Decode(&d); err != nil {
+			return nil, nil, err
+		}
+		decoder = xml.NewDecoder(strings.NewReader(xmlString))
+		if err := decoder.Decode(&eg); err != nil {
+			return nil, nil, err
+		}
 	}
 
-	swatchMap := make(map[string]swatch)
+	var egType bool = false
+
+	swatchMap := make(map[string]Swatch)
 	if len(eg.Inks) > 0 {
+
+		if wPt == 0 {
+			wPt = eg.W
+			hPt = eg.H
+			egType = false
+		}
 
 		if eg.Unit == "mm" {
 			d.Unit = "Millimeters"
@@ -149,40 +158,32 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 		d.Unit = "Millimeters"
 	}
 
-	if d.Unit == "Millimeters" {
+	switch d.Unit {
+	case "Millimeters":
 		d.Unit = "mm"
-		d.W = wPt / pt2mm
-		d.H = hPt / pt2mm
-	}
+		if !egType {
+			d.W = wPt / pt2mm
+			d.H = hPt / pt2mm
+		}
 
-	if d.Unit == "Centimeters" {
+	case "Centimeters":
 		d.Unit = "cm"
-		d.W = wPt / pt2cm
-		d.H = hPt / pt2cm
-	}
-
-	if d.Unit == "Inches" {
+		if !egType {
+			d.W = wPt / pt2cm
+			d.H = hPt / pt2cm
+		}
+	case "Inches":
 		d.Unit = "in"
-		d.W = wPt / pt2in
-		d.H = hPt / pt2in
-	}
-
-	if d.Unit == "Points" {
+		if !egType {
+			d.W = wPt / pt2in
+			d.H = hPt / pt2in
+		}
+	case "Points":
 		d.Unit = "mm"
-		d.W = wPt / pt2mm
-		d.H = hPt / pt2mm
-	}
-
-	if err = runGS(filepath, outputResult, resolution); err != nil {
-		return nil, err
-	}
-
-	info := &entryInfo{
-		Width:     d.W,
-		Height:    d.H,
-		Unit:      d.Unit,
-		ColorMode: ColorModeCMYK,
-		Swatches:  make([]swatch, 0),
+		if !egType {
+			d.W = wPt / pt2mm
+			d.H = hPt / pt2mm
+		}
 	}
 
 	if len(swatchMap) == 0 {
@@ -201,7 +202,7 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 					s.Black},
 				)
 			}
-			swatchMap[s.SwatchName] = swatch{
+			swatchMap[s.SwatchName] = Swatch{
 				Name: s.SwatchName,
 				RBG:  fmt.Sprintf("#%02x%02x%02x", c[0], c[1], c[2]),
 				Type: SpotComponent,
@@ -209,7 +210,24 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 		}
 	}
 
-	entries, err := os.ReadDir(output)
+	return &entryInfo{
+		Prefix:     fmt.Sprintf("page_%d", pageNum),
+		PageNumber: pageNum,
+		Width:      d.W,
+		Height:     d.H,
+		Unit:       d.Unit,
+		ColorMode:  ColorModeCMYK,
+		Swatches:   make([]Swatch, 0),
+	}, swatchMap, nil
+}
+
+func pageProcessing(filepath, output, basename string, pageNum int, info *entryInfo, swatchMap map[string]Swatch, resolution int) (*entryInfo, error) {
+
+	if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.tiff", basename)), pageNum, resolution); err != nil {
+		return nil, err
+	}
+
+	entries, err := os.ReadDir(path.Join(output, info.Prefix))
 	if err != nil {
 		return nil, err
 	}
@@ -218,8 +236,8 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 		name := entry.Name()
 		swatchName := matchSwatch(name)
 
-		swatchInfo := swatch{
-			Filepath: path.Join(output, entry.Name()),
+		swatchInfo := Swatch{
+			Filepath: path.Join(output, info.Prefix, entry.Name()),
 			Name:     swatchName,
 			NeedMate: true,
 		}
@@ -239,11 +257,51 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 
 		info.Swatches = append(info.Swatches, swatchInfo)
 	}
-
 	return info, nil
 }
 
-func runGS(filename string, output string, resolution int) error {
+func extractPDF(filepath string, basename string, output string, resolution int) ([]*entryInfo, error) {
+	gopopDoc, err := poppler2.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	pages := make([]*entryInfo, 0)
+	totalPages := gopopDoc.GetNPages()
+	for pageNum := 1; pageNum <= totalPages; pageNum++ {
+		log.Printf("Processing page %d from %d", pageNum, totalPages)
+		info, swatchMap, err := getEntryInfo(gopopDoc, pageNum)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := os.MkdirAll(path.Join(output, info.Prefix), DefaultFolderPerm); err != nil {
+			return nil, err
+		}
+
+		textContent, err := extractText(filepath, pageNum)
+		if err != nil {
+			return nil, err
+		}
+		info.TextContent = textContent
+
+		if (info.Height == 0 || info.Width == 0) && len(pages) > 0 {
+			info.Width = pages[0].Width
+			info.Height = pages[0].Height
+		}
+
+		info, err = pageProcessing(filepath, output, basename, pageNum, info, swatchMap, resolution)
+		if err != nil {
+			return nil, err
+		}
+		pages = append(pages, info)
+
+	}
+
+	return pages, nil
+}
+
+func runGS(filename string, output string, pageNum, resolution int) error {
 	args := []string{
 		"-q",
 		"-dBATCH",
@@ -255,8 +313,8 @@ func runGS(filename string, output string, resolution int) error {
 		"-dGridFitTT=2",
 		"-dTextAlphaBits=4",
 		"-dGraphicsAlphaBits=4",
-		"-dFirstPage=1",
-		"-dLastPage=1",
+		fmt.Sprintf("-dFirstPage=%d", pageNum),
+		fmt.Sprintf("-dLastPage=%d", pageNum),
 		"-sDEVICE=tiffsep",
 		fmt.Sprintf("-sOutputFile=%s", output),
 		fmt.Sprintf("-r%d", resolution),

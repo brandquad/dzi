@@ -80,7 +80,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 	originalFilepath := baseFile.Name()
 
-	var Colormode string
+	//var Colormode string
 
 	probe, err := vips.LoadImageFromFile(originalFilepath, nil)
 	if err != nil {
@@ -89,9 +89,9 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 
 	Loader := probe.OriginalFormat()
 	probe.Close()
-	Colormode = "CMYK"
+	//Colormode = "CMYK"
 
-	var info *entryInfo
+	var info []*entryInfo
 	if Loader == vips.ImageTypePDF {
 		log.Println("Processing as PDF file")
 		resolution, err := strconv.Atoi(c.Resolution)
@@ -109,6 +109,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		if err != nil {
 			return nil, err
 		}
+		//info = append(info, _info)
 		log.Println("Done.")
 	}
 
@@ -120,44 +121,69 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 
 	log.Println("Make DZI - colors")
-	if err = makeDZI(channels, dzi, c); err != nil {
+	if err = makeDZI(info, channels, dzi, c); err != nil {
 		return nil, err
 	}
 
 	log.Println("Make DZI - b-w")
-	if err = makeDZI(channelsBw, dziBw, c); err != nil {
+	if err = makeDZI(info, channelsBw, dziBw, c); err != nil {
 		return nil, err
 	}
 
 	log.Println("Make manifest.json")
-	var pSize = DziSize{
-		Width:      fmt.Sprintf("%d", int(info.Width)),
-		Height:     fmt.Sprintf("%d", int(info.Height)),
+	swatches := make([]*Swatch, 0)
+	pages := make([]*Page, 0)
+
+	for _, entry := range info {
+		var channelsArr = make([]string, 0)
+
+		for _, s := range entry.Swatches {
+
+			var needAppend bool = true
+			for _, sd := range swatches {
+				if sd.Name == s.Name {
+					needAppend = false
+				}
+			}
+
+			if needAppend {
+				swatches = append(swatches, &s)
+			}
+
+			if s.Type != Final {
+				channelsArr = append(channelsArr, s.Name)
+			}
+		}
+
+		pages = append(pages, &Page{
+			PageNum: entry.PageNumber,
+			Size: DziSize{
+				Width:  fmt.Sprintf("%d", int(entry.Width)),
+				Height: fmt.Sprintf("%d", int(entry.Height)),
+				Units:  entry.Unit,
+			},
+			Channels:    channelsArr,
+			TextContent: entry.TextContent,
+		})
+
+	}
+
+	var manifest *Manifest = &Manifest{
+		Version:    "2",
+		ID:         strconv.Itoa(assetId),
+		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
+		Source:     url,
+		Filename:   filename,
+		Basename:   basename,
+		TileSize:   c.TileSize,
 		CoverWidth: c.CoverWidth,
-		Units:      info.Unit,
 		Dpi:        c.Resolution,
 		Overlap:    c.Overlap,
-		TileSize:   c.TileSize,
+		Mode:       "CMYK",
+		Pages:      pages,
+		Swatches:   swatches,
 	}
 
-	var channelsArr = make([]string, 0)
-	for _, s := range info.Swatches {
-		if s.Type != Final {
-			channelsArr = append(channelsArr, s.Name)
-		}
-	}
-
-	var manifest = &Manifest{
-		ID:        strconv.Itoa(assetId),
-		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
-		Source:    url,
-		Filename:  filename,
-		Basename:  basename,
-		Mode:      Colormode,
-		Size:      pSize,
-		Channels:  channelsArr,
-		Swatches:  info.Swatches,
-	}
 	buff, err := json.Marshal(manifest)
 	if err != nil {
 		return nil, err
@@ -188,31 +214,40 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	return manifest, nil
 }
 
-func makeDZI(income string, outcome string, c Config) error {
-	entry, err := os.ReadDir(income)
-	if err != nil {
-		return err
-	}
+func makeDZI(info []*entryInfo, income string, outcome string, c Config) error {
 
-	for _, f := range entry {
-		if f.IsDir() {
-			continue
+	for _, entry := range info {
+
+		sourceFolder := path.Join(income, entry.Prefix)
+		outcomeFolder := path.Join(outcome, entry.Prefix)
+
+		os.MkdirAll(outcomeFolder, DefaultFolderPerm)
+
+		files, err := os.ReadDir(sourceFolder)
+		if err != nil {
+			return err
 		}
 
-		fpath := path.Join(income, f.Name())
-		fext := path.Ext(f.Name())
-		fbasename := strings.TrimSuffix(f.Name(), fext)
-		dziPath := path.Join(outcome, fbasename)
+		for _, f := range files {
+			if f.IsDir() {
+				continue
+			}
 
-		if _, err = execCmd("vips", "dzsave",
-			fpath,
-			dziPath,
-			"--strip",
-			"--suffix",
-			".webp",
-			fmt.Sprintf("--tile-size=%s", c.TileSize),
-			fmt.Sprintf("--overlap=%s", c.Overlap)); err != nil {
-			return err
+			fpath := path.Join(sourceFolder, f.Name())
+			fext := path.Ext(f.Name())
+			fbasename := strings.TrimSuffix(f.Name(), fext)
+			dziPath := path.Join(outcomeFolder, fbasename)
+
+			if _, err = execCmd("vips", "dzsave",
+				fpath,
+				dziPath,
+				"--strip",
+				"--suffix",
+				".webp",
+				fmt.Sprintf("--tile-size=%s", c.TileSize),
+				fmt.Sprintf("--overlap=%s", c.Overlap)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

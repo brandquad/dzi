@@ -25,7 +25,7 @@ const (
 	ColorModeRBGA  ColorMode = "RBGA"
 )
 
-type swatch struct {
+type Swatch struct {
 	Filepath string
 	Name     string
 	RBG      string
@@ -33,19 +33,22 @@ type swatch struct {
 	NeedMate bool
 }
 
-func (s swatch) Basename() string {
+func (s Swatch) Basename() string {
 	return filepath.Base(s.Filepath)
 }
 
-func (s swatch) Filename() string {
+func (s Swatch) Filename() string {
 	ext := path.Ext(s.Basename())
 	return strings.TrimSuffix(s.Basename(), ext)
 }
 
 type entryInfo struct {
-	Width     float64
-	Height    float64
-	ColorMode ColorMode
-	Unit      string
-	Swatches  []swatch
+	Prefix      string
+	PageNumber  int
+	Width       float64
+	Height      float64
+	ColorMode   ColorMode
+	Unit        string
+	Swatches    []Swatch
+	TextContent string
 }

@@ -9,18 +9,28 @@ import (
 	"strings"
 )
 
-func extractImage(filename, basename, output, iccPath string) (*entryInfo, error) {
+func extractImage(filename, basename, _output, iccPath string) ([]*entryInfo, error) {
+	pages := make([]*entryInfo, 1)
+
 	ref, err := vips.LoadImageFromFile(filename, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	info := &entryInfo{
-		Width:     float64(ref.Width()),
-		Height:    float64(ref.Height()),
-		Unit:      "px",
-		ColorMode: ColorModeCMYK,
-		Swatches:  make([]swatch, 0),
+		Prefix:      "page_1",
+		PageNumber:  1,
+		Width:       float64(ref.Width()),
+		Height:      float64(ref.Height()),
+		Unit:        "px",
+		ColorMode:   ColorModeCMYK,
+		TextContent: "",
+		Swatches:    make([]Swatch, 0),
+	}
+	output := path.Join(_output, info.Prefix)
+
+	if err = os.MkdirAll(output, DefaultFolderPerm); err != nil {
+		return nil, err
 	}
 
 	var refRGB *vips.ImageRef
@@ -65,7 +75,7 @@ func extractImage(filename, basename, output, iccPath string) (*entryInfo, error
 	if err = toTiff(refRGB, rgbOutput); err != nil {
 		return nil, err
 	}
-	info.Swatches = append(info.Swatches, swatch{
+	info.Swatches = append(info.Swatches, Swatch{
 		Filepath: rgbOutput,
 		Name:     "Color",
 		Type:     Final,
@@ -100,7 +110,7 @@ func extractImage(filename, basename, output, iccPath string) (*entryInfo, error
 			return nil, err
 		}
 
-		info.Swatches = append(info.Swatches, swatch{
+		info.Swatches = append(info.Swatches, Swatch{
 			Filepath: outputPath,
 			Name:     swatchName,
 			RBG:      CMYK[strings.ToLower(swatchName)],
@@ -110,7 +120,8 @@ func extractImage(filename, basename, output, iccPath string) (*entryInfo, error
 		band.Close()
 	}
 
-	return info, nil
+	pages[0] = info
+	return pages, nil
 }
 
 func toTiff(ref *vips.ImageRef, output string) error {
