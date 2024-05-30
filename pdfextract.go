@@ -2,6 +2,7 @@ package dzi
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	poppler2 "github.com/johbar/go-poppler"
 	"log"
@@ -77,8 +78,8 @@ func esko2swatch(name, egname, egtype, book string, nr, ng, nb float64) Swatch {
 }
 
 type pdfMeta struct {
-	W            float64
-	H            float64
+	W            float64  `xml:"RDF>Description>MaxPageSize>w"`
+	H            float64  `xml:"RDF>Description>MaxPageSize>h"`
 	Unit         string   `xml:"RDF>Description>MaxPageSize>unit"`
 	PlateNames   []string `xml:"RDF>Description>PlateNames>Seq>li"`
 	SwatchGroups []struct {
@@ -112,7 +113,7 @@ func extractText(filepath string, pageNum int) (string, error) {
 
 func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]Swatch, error) {
 	var wPt, hPt float64
-	p := doc.GetPage(pageNum)
+	p := doc.GetPage(pageNum - 1)
 	wPt, hPt = p.Size()
 
 	xmlString := doc.Info().Metadata
@@ -130,24 +131,37 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 			return nil, nil, err
 		}
 	}
+	var egType, pdfType bool
 
-	var egType bool = false
+	if wPt == 0 && hPt == 0 {
+
+		if d.W > 0 && d.H > 0 {
+			pdfType = true
+			d.W = d.W
+			d.H = d.H
+		} else if eg.W > 0 && eg.H > 0 {
+			egType = true
+
+			d.W = eg.W
+			d.H = eg.H
+
+			if eg.Unit == "mm" {
+				d.Unit = "Millimeters"
+			} else {
+				d.W /= pt2mm
+				d.H /= pt2mm
+				d.Unit = "Points"
+			}
+		} else {
+			return nil, nil, errors.New("page size not defined")
+		}
+	} else {
+		d.W = wPt
+		d.H = hPt
+	}
 
 	swatchMap := make(map[string]Swatch)
 	if len(eg.Inks) > 0 && len(d.SwatchGroups) == 0 {
-
-		if wPt == 0 {
-			wPt = eg.W
-			hPt = eg.H
-			egType = false
-		}
-
-		if eg.Unit == "mm" {
-			d.Unit = "Millimeters"
-		} else {
-			d.Unit = "Points"
-		}
-
 		for _, e := range eg.Inks {
 			sw := esko2swatch(e.Name, e.EGName, e.Type, e.Book, e.R, e.G, e.B)
 			swatchMap[sw.Name] = sw
@@ -158,32 +172,39 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 		d.Unit = "Millimeters"
 	}
 
+	if !egType && !pdfType {
+		switch d.Unit {
+		case "Millimeters":
+			d.W /= pt2mm
+			d.H /= pt2mm
+
+		case "Centimeters":
+			d.Unit = "cm"
+			d.W /= pt2cm
+			d.H /= pt2cm
+
+		case "Inches":
+			d.Unit = "in"
+			d.W /= pt2in
+			d.H /= pt2in
+
+		case "Points":
+			d.Unit = "mm"
+			d.W /= pt2mm
+			d.H /= pt2mm
+
+		}
+	}
+
 	switch d.Unit {
 	case "Millimeters":
 		d.Unit = "mm"
-		if !egType {
-			d.W = wPt / pt2mm
-			d.H = hPt / pt2mm
-		}
-
 	case "Centimeters":
 		d.Unit = "cm"
-		if !egType {
-			d.W = wPt / pt2cm
-			d.H = hPt / pt2cm
-		}
 	case "Inches":
 		d.Unit = "in"
-		if !egType {
-			d.W = wPt / pt2in
-			d.H = hPt / pt2in
-		}
 	case "Points":
 		d.Unit = "mm"
-		if !egType {
-			d.W = wPt / pt2mm
-			d.H = hPt / pt2mm
-		}
 	}
 
 	if len(swatchMap) == 0 {
@@ -261,6 +282,7 @@ func pageProcessing(filepath, output, basename string, pageNum int, info *entryI
 }
 
 func extractPDF(filepath string, basename string, output string, resolution int) ([]*entryInfo, error) {
+	//gopopDoc, err := poppler1.NewFromFile(filepath, "")
 	gopopDoc, err := poppler2.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -268,9 +290,10 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 
 	pages := make([]*entryInfo, 0)
 	totalPages := gopopDoc.GetNPages()
-	for pageNum := 1; pageNum <= totalPages; pageNum++ {
-		log.Printf("Processing page %d from %d", pageNum, totalPages)
-		info, swatchMap, err := getEntryInfo(gopopDoc, pageNum)
+	//totalPages := gopopDoc.GetTotalPages()
+	for pageIndex := 1; pageIndex <= totalPages; pageIndex++ {
+		log.Printf("Processing page %d from %d", pageIndex, totalPages)
+		info, swatchMap, err := getEntryInfo(gopopDoc, pageIndex)
 		if err != nil {
 			return nil, err
 		}
@@ -279,7 +302,7 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 			return nil, err
 		}
 
-		textContent, err := extractText(filepath, pageNum)
+		textContent, err := extractText(filepath, pageIndex)
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +313,7 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 			info.Height = pages[0].Height
 		}
 
-		info, err = pageProcessing(filepath, output, basename, pageNum, info, swatchMap, resolution)
+		info, err = pageProcessing(filepath, output, basename, pageIndex, info, swatchMap, resolution)
 		if err != nil {
 			return nil, err
 		}

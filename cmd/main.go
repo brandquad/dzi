@@ -6,6 +6,7 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/kelseyhightower/envconfig"
 	"log"
+	"os"
 	"strconv"
 )
 
@@ -39,6 +40,7 @@ func (c Config) MakeDziConfig() dzi.Config {
 }
 
 func main() {
+	vips.LoggingSettings(func(messageDomain string, verbosity vips.LogLevel, message string) {}, vips.LogLevelInfo)
 	vips.Startup(nil)
 	defer vips.Shutdown()
 
@@ -61,7 +63,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to convert AssetId to integer: %v\n", err)
 	}
-	manifest, err := dzi.Processing(url, assetId, c.MakeDziConfig())
+	config := c.MakeDziConfig()
+	_, config.DebugMode = os.LookupEnv("DEBUG")
+	manifest, err := dzi.Processing(url, assetId, config)
 
 	if err != nil {
 		log.Fatalln(err)

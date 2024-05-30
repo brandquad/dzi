@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"strconv"
-	"time"
 )
 
 func colorize(e []*entryInfo, _outputColorized, _outputBw, _leads1000, _covers, iccProfile string, coverWidth int) error {
@@ -25,19 +24,28 @@ func colorize(e []*entryInfo, _outputColorized, _outputBw, _leads1000, _covers, 
 	}()
 
 	for _, _e := range e {
+
 		outputColorized := path.Join(_outputColorized, _e.Prefix)
 		outputBw := path.Join(_outputBw, _e.Prefix)
 		leads1000 := path.Join(_leads1000, _e.Prefix)
 		covers := path.Join(_covers, _e.Prefix)
 
-		os.MkdirAll(outputColorized, DefaultFolderPerm)
-		os.MkdirAll(outputBw, DefaultFolderPerm)
-		os.MkdirAll(leads1000, DefaultFolderPerm)
-		os.MkdirAll(covers, DefaultFolderPerm)
+		if err = os.MkdirAll(outputColorized, DefaultFolderPerm); err != nil {
+			return err
+		}
+		if err = os.MkdirAll(outputBw, DefaultFolderPerm); err != nil {
+			return err
+		}
+		if err = os.MkdirAll(leads1000, DefaultFolderPerm); err != nil {
+			return err
+		}
+		if err = os.MkdirAll(covers, DefaultFolderPerm); err != nil {
+			return err
+		}
 
 		for _, entry := range _e.Swatches {
 
-			log.Println("Colorize:", entry.Name)
+			log.Printf("Colorize channel %s at page %d", entry.Name, _e.PageNumber)
 
 			ref, err = vips.LoadImageFromFile(entry.Filepath, nil)
 			if err != nil {
@@ -83,23 +91,20 @@ func colorize(e []*entryInfo, _outputColorized, _outputBw, _leads1000, _covers, 
 				mateRef.Close()
 
 			} else {
-				os.Remove(path.Join(outputBw, entry.Basename()))
+				if err = os.Remove(path.Join(outputBw, entry.Basename())); err != nil {
+					return err
+				}
 			}
 
-			log.Println("Covers for:", entry.Name)
 			leads1000Path := path.Join(leads1000, fmt.Sprintf("%s.png", entry.Filename()))
 			coverPath := path.Join(covers, fmt.Sprintf("%s.png", entry.Filename()))
 
-			st := time.Now()
 			if _, err = execCmd("vips", "thumbnail", entry.Filepath, leads1000Path, "1000"); err != nil {
 				return err
 			}
-
 			if _, err = execCmd("vips", "thumbnail", entry.Filepath, coverPath, strconv.Itoa(coverWidth)); err != nil {
 				return err
 			}
-			log.Println("Covers for:", entry.Name, time.Since(st).Microseconds())
-
 		}
 	}
 

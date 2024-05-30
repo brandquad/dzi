@@ -39,16 +39,22 @@ func prepareFolders(folders ...string) error {
 }
 
 func Processing(url string, assetId int, c Config) (*Manifest, error) {
-	filename := path.Base(url)
-	_tmp := os.TempDir()
 
-	//_tmp := "_tmp"
-	//if _, err := os.ReadDir(_tmp); err == nil {
-	//	err = os.RemoveAll(_tmp)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+	filename := path.Base(url)
+	var _tmp string
+	if c.DebugMode {
+		log.Println("DEBUG MODE ON")
+
+		_tmp = "_tmp"
+		if _, err := os.ReadDir(_tmp); err == nil {
+			err = os.RemoveAll(_tmp)
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		_tmp = os.TempDir()
+	}
 
 	tmp := path.Join(_tmp, strconv.Itoa(assetId))
 	leads := path.Join(tmp, "leads")
@@ -120,12 +126,12 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		return nil, err
 	}
 
-	log.Println("Make DZI - colors")
+	log.Println("Make color DZI ")
 	if err = makeDZI(info, channels, dzi, c); err != nil {
 		return nil, err
 	}
 
-	log.Println("Make DZI - b-w")
+	log.Println("Make black and white DZI")
 	if err = makeDZI(info, channelsBw, dziBw, c); err != nil {
 		return nil, err
 	}
