@@ -134,7 +134,7 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 	var egType bool = false
 
 	swatchMap := make(map[string]Swatch)
-	if len(eg.Inks) > 0 {
+	if len(eg.Inks) > 0 && len(d.SwatchGroups) == 0 {
 
 		if wPt == 0 {
 			wPt = eg.W
@@ -313,6 +313,7 @@ func runGS(filename string, output string, pageNum, resolution int) error {
 		"-dGridFitTT=2",
 		"-dTextAlphaBits=4",
 		"-dGraphicsAlphaBits=4",
+		"-dMaxSpots=60",
 		fmt.Sprintf("-dFirstPage=%d", pageNum),
 		fmt.Sprintf("-dLastPage=%d", pageNum),
 		"-sDEVICE=tiffsep",
