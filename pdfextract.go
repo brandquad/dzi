@@ -257,6 +257,7 @@ func runGS(filename string, output string, resolution int) error {
 		"-dGraphicsAlphaBits=4",
 		"-dFirstPage=1",
 		"-dLastPage=1",
+		"-dMaxSpots=60",
 		"-sDEVICE=tiffsep",
 		fmt.Sprintf("-sOutputFile=%s", output),
 		fmt.Sprintf("-r%d", resolution),
