@@ -173,7 +173,14 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 		d.H = hPt / pt2mm
 	}
 
-	if err = runGS(filepath, outputResult, resolution); err != nil {
+	var maxSpots = 0
+	for _, sw := range swatchMap {
+		if sw.Type == SpotComponent {
+			maxSpots++
+		}
+	}
+
+	if err = runGS(filepath, outputResult, resolution, maxSpots); err != nil {
 		return nil, err
 	}
 
@@ -243,7 +250,7 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 	return info, nil
 }
 
-func runGS(filename string, output string, resolution int) error {
+func runGS(filename string, output string, resolution, maxSpots int) error {
 	args := []string{
 		"-q",
 		"-dBATCH",
@@ -257,7 +264,7 @@ func runGS(filename string, output string, resolution int) error {
 		"-dGraphicsAlphaBits=4",
 		"-dFirstPage=1",
 		"-dLastPage=1",
-		"-dMaxSpots=60",
+		fmt.Sprintf("-dMaxSpots=%d", maxSpots),
 		"-sDEVICE=tiffsep",
 		fmt.Sprintf("-sOutputFile=%s", output),
 		fmt.Sprintf("-r%d", resolution),
