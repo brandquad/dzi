@@ -243,8 +243,13 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 }
 
 func pageProcessing(filepath, output, basename string, pageNum int, info *entryInfo, swatchMap map[string]Swatch, resolution int) (*entryInfo, error) {
-
-	if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.tiff", basename)), pageNum, resolution); err != nil {
+	maxSpots := 0
+	for _, swatch := range swatchMap {
+		if swatch.Type == SpotComponent {
+			maxSpots++
+		}
+	}
+	if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.tiff", basename)), pageNum, resolution, maxSpots); err != nil {
 		return nil, err
 	}
 
@@ -324,7 +329,7 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 	return pages, nil
 }
 
-func runGS(filename string, output string, pageNum, resolution int) error {
+func runGS(filename string, output string, pageNum, resolution, maxSpots int) error {
 	args := []string{
 		"-q",
 		"-dBATCH",
@@ -336,12 +341,12 @@ func runGS(filename string, output string, pageNum, resolution int) error {
 		"-dGridFitTT=2",
 		"-dTextAlphaBits=4",
 		"-dGraphicsAlphaBits=4",
-		"-dMaxSpots=60",
+		fmt.Sprintf("-dMaxSpots=%d", maxSpots),
 		fmt.Sprintf("-dFirstPage=%d", pageNum),
 		fmt.Sprintf("-dLastPage=%d", pageNum),
 		"-sDEVICE=tiffsep",
-		fmt.Sprintf("-sOutputFile=%s", output),
 		fmt.Sprintf("-r%d", resolution),
+		fmt.Sprintf("-sOutputFile=%s", output),
 		filename,
 	}
 
