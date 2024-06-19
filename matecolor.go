@@ -7,10 +7,9 @@ import (
 	"log"
 	"os"
 	"path"
-	"strconv"
 )
 
-func colorize(e []*entryInfo, _outputColorized, _outputBw, _leads1000, _covers, iccProfile string, coverWidth int) error {
+func colorize(e []*entryInfo, _outputColorized, _outputBw, _leads1000, _covers, iccProfile string, coverHeight int) error {
 	var ref, mateRef *vips.ImageRef
 	var err error
 
@@ -102,7 +101,7 @@ func colorize(e []*entryInfo, _outputColorized, _outputBw, _leads1000, _covers, 
 			if _, err = execCmd("vips", "thumbnail", entry.Filepath, leads1000Path, "1000"); err != nil {
 				return err
 			}
-			if _, err = execCmd("vips", "thumbnail", entry.Filepath, coverPath, strconv.Itoa(coverWidth)); err != nil {
+			if _, err = execCmd("vips", "thumbnail", entry.Filepath, coverPath, "1000", "--height", fmt.Sprintf("%d", coverHeight)); err != nil {
 				return err
 			}
 		}

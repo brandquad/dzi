@@ -23,19 +23,20 @@ type Page struct {
 }
 
 type Manifest struct {
-	Version    string    `json:"version"`
-	ID         string    `json:"id"`
-	Timestamp  string    `json:"timestamp"`
-	Source     string    `json:"source"`
-	Filename   string    `json:"filename"`
-	Basename   string    `json:"basename"`
-	TileSize   string    `json:"tile_size"`
-	CoverWidth string    `json:"cover_width"`
-	Dpi        string    `json:"dpi"`
-	Overlap    string    `json:"overlap"`
-	Mode       string    `json:"mode"`
-	Pages      []*Page   `json:"pages"`
-	Swatches   []*Swatch `json:"swatches,omitempty"`
+	Version       string    `json:"version"`
+	ID            string    `json:"id"`
+	Timestamp     string    `json:"timestamp"`
+	Source        string    `json:"source"`
+	Filename      string    `json:"filename"`
+	Basename      string    `json:"basename"`
+	TileSize      string    `json:"tile_size"`
+	CoverHeight   string    `json:"cover_height"`
+	Dpi           string    `json:"dpi"`
+	Overlap       string    `json:"overlap"`
+	Mode          string    `json:"mode"`
+	Pages         []*Page   `json:"pages"`
+	Swatches      []*Swatch `json:"swatches,omitempty"`
+	SplitChannels bool      `json:"split_channels"`
 }
 
 func (b *Manifest) toMM(unit string, x float64) float64 {
@@ -72,7 +73,7 @@ func (b *Manifest) toFloat(s string) float64 {
 }
 
 func (b *Manifest) GetCoverSize() int {
-	var s = b.toFloat(b.CoverWidth)
+	var s = b.toFloat(b.CoverHeight)
 	return int(s)
 }
 

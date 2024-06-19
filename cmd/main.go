@@ -11,15 +11,17 @@ import (
 )
 
 type Config struct {
-	S3Host             string `envconfig:"DZI_S3_HOST" required:"true"`
-	S3Key              string `envconfig:"DZI_S3_KEY" required:"true"`
-	S3Secret           string `envconfig:"DZI_S3_SECRET" required:"true"`
-	S3Bucket           string `envconfig:"DZI_BUCKET" required:"true" default:"dzi"`
-	TileSize           string `envconfig:"DZI_TILE_SIZE" default:"255"`
-	Overlap            string `envconfig:"DZI_OVERLAP" default:"1"`
-	Resolution         string `envconfig:"DZI_RESOLUTION" default:"600"`
-	CoverWidth         string `envconfig:"DZI_COVER_W" default:"200"`
-	DebugMode          bool   `envconfig:"DZI_DEBUG" default:"false"`
+	S3Host        string `envconfig:"DZI_S3_HOST" required:"true"`
+	S3Key         string `envconfig:"DZI_S3_KEY" required:"true"`
+	S3Secret      string `envconfig:"DZI_S3_SECRET" required:"true"`
+	S3Bucket      string `envconfig:"DZI_BUCKET" required:"true" default:"dzi"`
+	TileSize      string `envconfig:"DZI_TILE_SIZE" default:"255"`
+	Overlap       string `envconfig:"DZI_OVERLAP" default:"1"`
+	Resolution    string `envconfig:"DZI_RESOLUTION" default:"600"`
+	CoverHeight   string `envconfig:"DZI_COVER_H" default:"300"`
+	DebugMode     bool   `envconfig:"DZI_DEBUG" default:"false"`
+	SplitChannels bool   `envconfig:"DZI_SPLIT_CHANNELS" default:"true"`
+	//SplitChannels      bool   `envconfig:"DZI_SPLIT_CHANNELS" default:"false"`
 	HookUrl            string `envconfig:"HOOK_URL"`
 	ICCProfileFilepath string
 }
@@ -33,8 +35,9 @@ func (c Config) MakeDziConfig() dzi.Config {
 		TileSize:           c.TileSize,
 		Overlap:            c.Overlap,
 		Resolution:         c.Resolution,
-		CoverWidth:         c.CoverWidth,
+		CoverHeight:        c.CoverHeight,
 		ICCProfileFilepath: c.ICCProfileFilepath,
+		SplitChannels:      c.SplitChannels,
 		DebugMode:          false,
 	}
 }

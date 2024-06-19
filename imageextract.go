@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func extractImage(filename, basename, _output, iccPath string) ([]*entryInfo, error) {
+func extractImage(filename, basename, _output, iccPath string, splitChannels bool) ([]*entryInfo, error) {
 	pages := make([]*entryInfo, 1)
 
 	ref, err := vips.LoadImageFromFile(filename, nil)
@@ -82,42 +82,44 @@ func extractImage(filename, basename, _output, iccPath string) ([]*entryInfo, er
 		NeedMate: false,
 	})
 
-	bands, err := ref.BandSplit()
-	if err != nil {
-		return nil, err
-	}
-	for idx, band := range bands {
-		var swatchName string
-		switch idx {
-		case 0:
-			swatchName = "Cyan"
-		case 1:
-			swatchName = "Magenta"
-		case 2:
-			swatchName = "Yellow"
-		case 3:
-			swatchName = "Black"
-		case 4:
-			swatchName = "Alpha"
-		}
-
-		if err = band.Invert(); err != nil {
+	if splitChannels {
+		bands, err := ref.BandSplit()
+		if err != nil {
 			return nil, err
 		}
+		for idx, band := range bands {
+			var swatchName string
+			switch idx {
+			case 0:
+				swatchName = "Cyan"
+			case 1:
+				swatchName = "Magenta"
+			case 2:
+				swatchName = "Yellow"
+			case 3:
+				swatchName = "Black"
+			case 4:
+				swatchName = "Alpha"
+			}
 
-		outputPath := path.Join(output, fmt.Sprintf("%s(%s).tiff", basename, swatchName))
-		if err = toTiff(band, outputPath); err != nil {
-			return nil, err
+			if err = band.Invert(); err != nil {
+				return nil, err
+			}
+
+			outputPath := path.Join(output, fmt.Sprintf("%s(%s).tiff", basename, swatchName))
+			if err = toTiff(band, outputPath); err != nil {
+				return nil, err
+			}
+
+			info.Swatches = append(info.Swatches, Swatch{
+				Filepath: outputPath,
+				Name:     swatchName,
+				RBG:      CMYK[strings.ToLower(swatchName)],
+				Type:     CmykComponent,
+				NeedMate: true,
+			})
+			band.Close()
 		}
-
-		info.Swatches = append(info.Swatches, Swatch{
-			Filepath: outputPath,
-			Name:     swatchName,
-			RBG:      CMYK[strings.ToLower(swatchName)],
-			Type:     CmykComponent,
-			NeedMate: true,
-		})
-		band.Close()
 	}
 
 	pages[0] = info

@@ -23,8 +23,9 @@ type Config struct {
 	TileSize           string
 	Overlap            string
 	Resolution         string
-	CoverWidth         string
+	CoverHeight        string
 	ICCProfileFilepath string
+	SplitChannels      bool
 	DebugMode          bool
 }
 
@@ -86,8 +87,6 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 	originalFilepath := baseFile.Name()
 
-	//var Colormode string
-
 	probe, err := vips.LoadImageFromFile(originalFilepath, nil)
 	if err != nil {
 		return nil, err
@@ -95,7 +94,6 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 
 	Loader := probe.OriginalFormat()
 	probe.Close()
-	//Colormode = "CMYK"
 
 	var info []*entryInfo
 	if Loader == vips.ImageTypePDF {
@@ -104,14 +102,14 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		if err != nil {
 			return nil, err
 		}
-		info, err = extractPDF(originalFilepath, basename, channels, resolution)
+		info, err = extractPDF(originalFilepath, basename, channels, resolution, c.SplitChannels)
 		if err != nil {
 			return nil, err
 		}
 		log.Println("Done.")
 	} else {
 		log.Println("Processing as Image file")
-		info, err = extractImage(originalFilepath, basename, channels, c.ICCProfileFilepath)
+		info, err = extractImage(originalFilepath, basename, channels, c.ICCProfileFilepath, c.SplitChannels)
 		if err != nil {
 			return nil, err
 		}
@@ -121,8 +119,8 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 
 	log.Println("Colorize channels")
 
-	coverWidth, _ := strconv.Atoi(c.CoverWidth)
-	if err = colorize(info, channels, channelsBw, leads, covers, c.ICCProfileFilepath, coverWidth); err != nil {
+	coverHeight, _ := strconv.Atoi(c.CoverHeight)
+	if err = colorize(info, channels, channelsBw, leads, covers, c.ICCProfileFilepath, coverHeight); err != nil {
 		return nil, err
 	}
 
@@ -175,19 +173,20 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 
 	var manifest *Manifest = &Manifest{
-		Version:    "2",
-		ID:         strconv.Itoa(assetId),
-		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
-		Source:     url,
-		Filename:   filename,
-		Basename:   basename,
-		TileSize:   c.TileSize,
-		CoverWidth: c.CoverWidth,
-		Dpi:        c.Resolution,
-		Overlap:    c.Overlap,
-		Mode:       "CMYK",
-		Pages:      pages,
-		Swatches:   swatches,
+		Version:       "2",
+		ID:            strconv.Itoa(assetId),
+		Timestamp:     time.Now().Format("2006-01-02 15:04:05"),
+		Source:        url,
+		Filename:      filename,
+		Basename:      basename,
+		TileSize:      c.TileSize,
+		CoverHeight:   c.CoverHeight,
+		Dpi:           c.Resolution,
+		Overlap:       c.Overlap,
+		Mode:          "CMYK",
+		Pages:         pages,
+		Swatches:      swatches,
+		SplitChannels: c.SplitChannels,
 	}
 
 	buff, err := json.Marshal(manifest)

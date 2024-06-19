@@ -242,14 +242,14 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 	}, swatchMap, nil
 }
 
-func pageProcessing(filepath, output, basename string, pageNum int, info *entryInfo, swatchMap map[string]Swatch, resolution int) (*entryInfo, error) {
+func pageProcessing(filepath, output, basename string, pageNum int, info *entryInfo, swatchMap map[string]Swatch, resolution int, splitChannels bool) (*entryInfo, error) {
 	maxSpots := 0
 	for _, swatch := range swatchMap {
 		if swatch.Type == SpotComponent {
 			maxSpots++
 		}
 	}
-	if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.tiff", basename)), pageNum, resolution, maxSpots); err != nil {
+	if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.tiff", basename)), pageNum, resolution, maxSpots, splitChannels); err != nil {
 		return nil, err
 	}
 
@@ -286,7 +286,7 @@ func pageProcessing(filepath, output, basename string, pageNum int, info *entryI
 	return info, nil
 }
 
-func extractPDF(filepath string, basename string, output string, resolution int) ([]*entryInfo, error) {
+func extractPDF(filepath string, basename string, output string, resolution int, splitChannels bool) ([]*entryInfo, error) {
 	//gopopDoc, err := poppler1.NewFromFile(filepath, "")
 	gopopDoc, err := poppler2.Open(filepath)
 	if err != nil {
@@ -318,7 +318,7 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 			info.Height = pages[0].Height
 		}
 
-		info, err = pageProcessing(filepath, output, basename, pageIndex, info, swatchMap, resolution)
+		info, err = pageProcessing(filepath, output, basename, pageIndex, info, swatchMap, resolution, splitChannels)
 		if err != nil {
 			return nil, err
 		}
@@ -329,25 +329,48 @@ func extractPDF(filepath string, basename string, output string, resolution int)
 	return pages, nil
 }
 
-func runGS(filename string, output string, pageNum, resolution, maxSpots int) error {
-	args := []string{
-		"-q",
-		"-dBATCH",
-		"-dNOPAUSE",
-		"-dSAFER",
-		"-dSubsetFonts=true",
-		"-dMaxBitmap=500000000",
-		"-dAlignToPixels=0",
-		"-dGridFitTT=2",
-		"-dTextAlphaBits=4",
-		"-dGraphicsAlphaBits=4",
-		fmt.Sprintf("-dMaxSpots=%d", maxSpots),
-		fmt.Sprintf("-dFirstPage=%d", pageNum),
-		fmt.Sprintf("-dLastPage=%d", pageNum),
-		"-sDEVICE=tiffsep",
-		fmt.Sprintf("-r%d", resolution),
-		fmt.Sprintf("-sOutputFile=%s", output),
-		filename,
+func runGS(filename string, output string, pageNum, resolution, maxSpots int, splitChannels bool) error {
+	var args []string
+	if splitChannels {
+		args = []string{
+			"-q",
+			"-dBATCH",
+			"-dNOPAUSE",
+			"-dSAFER",
+			"-dSubsetFonts=true",
+			"-dMaxBitmap=500000000",
+			"-dAlignToPixels=0",
+			"-dGridFitTT=2",
+			"-dTextAlphaBits=4",
+			"-dGraphicsAlphaBits=4",
+			fmt.Sprintf("-dMaxSpots=%d", maxSpots),
+			fmt.Sprintf("-dFirstPage=%d", pageNum),
+			fmt.Sprintf("-dLastPage=%d", pageNum),
+			"-sDEVICE=tiffsep",
+			fmt.Sprintf("-r%d", resolution),
+			fmt.Sprintf("-sOutputFile=%s", output),
+			filename,
+		}
+	} else {
+		args = []string{
+			"-q",
+			"-dBATCH",
+			"-dNOPAUSE",
+			"-dSAFER",
+			"-dSubsetFonts=true",
+			"-dMaxBitmap=500000000",
+			"-dAlignToPixels=0",
+			"-dGridFitTT=2",
+			"-dTextAlphaBits=4",
+			"-dGraphicsAlphaBits=4",
+			fmt.Sprintf("-dMaxSpots=%d", maxSpots),
+			fmt.Sprintf("-dFirstPage=%d", pageNum),
+			fmt.Sprintf("-dLastPage=%d", pageNum),
+			"-sDEVICE=tiff32nc",
+			fmt.Sprintf("-r%d", resolution),
+			fmt.Sprintf("-sOutputFile=%s", output),
+			filename,
+		}
 	}
 
 	if _, err := execCmd("gs", args...); err != nil {
