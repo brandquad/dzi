@@ -251,7 +251,12 @@ func pageProcessing(filepath, output, basename string, pageNum int, info *entryI
 			maxSpots++
 		}
 	}
-	if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.tiff", basename)), pageNum, resolution, maxSpots, splitChannels); err != nil {
+	if splitChannels {
+		if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.tiff", basename)), pageNum, resolution, maxSpots, true); err != nil {
+			return nil, err
+		}
+	}
+	if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.jpeg", basename)), pageNum, resolution, maxSpots, false); err != nil {
 		return nil, err
 	}
 
@@ -368,7 +373,7 @@ func runGS(filename string, output string, pageNum, resolution, maxSpots int, sp
 			fmt.Sprintf("-dMaxSpots=%d", maxSpots),
 			fmt.Sprintf("-dFirstPage=%d", pageNum),
 			fmt.Sprintf("-dLastPage=%d", pageNum),
-			"-sDEVICE=tiff32nc",
+			"-sDEVICE=jpeg",
 			fmt.Sprintf("-r%d", resolution),
 			fmt.Sprintf("-sOutputFile=%s", output),
 			filename,
@@ -377,6 +382,10 @@ func runGS(filename string, output string, pageNum, resolution, maxSpots int, sp
 
 	if _, err := execCmd("gs", args...); err != nil {
 		return err
+	}
+
+	if splitChannels {
+		return os.Remove(output)
 	}
 	return nil
 }
