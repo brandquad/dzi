@@ -223,10 +223,12 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 					s.Black},
 				)
 			}
-			swatchMap[s.SwatchName] = Swatch{
-				Name: s.SwatchName,
-				RBG:  fmt.Sprintf("#%02x%02x%02x", c[0], c[1], c[2]),
-				Type: SpotComponent,
+			if c != nil {
+				swatchMap[s.SwatchName] = Swatch{
+					Name: s.SwatchName,
+					RBG:  fmt.Sprintf("#%02x%02x%02x", c[0], c[1], c[2]),
+					Type: SpotComponent,
+				}
 			}
 		}
 	}
