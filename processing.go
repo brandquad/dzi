@@ -159,11 +159,20 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 			}
 		}
 
+		var wStr, hStr string
+		if entry.Unit == "px" {
+			wStr = fmt.Sprintf("%d", int(entry.Width))
+			hStr = fmt.Sprintf("%d", int(entry.Height))
+		} else {
+			wStr = fmt.Sprintf("%.4f", entry.Width)
+			hStr = fmt.Sprintf("%.4f", entry.Height)
+		}
+
 		pages = append(pages, &Page{
 			PageNum: entry.PageNumber,
 			Size: DziSize{
-				Width:  fmt.Sprintf("%d", int(entry.Width)),
-				Height: fmt.Sprintf("%d", int(entry.Height)),
+				Width:  wStr,
+				Height: hStr,
 				Units:  entry.Unit,
 			},
 			Channels:    channelsArr,
