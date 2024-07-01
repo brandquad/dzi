@@ -6,6 +6,7 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/google/uuid"
 	"log"
+	"math"
 	"os"
 	"path"
 	"strconv"
@@ -164,8 +165,8 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 			wStr = fmt.Sprintf("%d", int(entry.Width))
 			hStr = fmt.Sprintf("%d", int(entry.Height))
 		} else {
-			wStr = fmt.Sprintf("%.4f", entry.Width)
-			hStr = fmt.Sprintf("%.4f", entry.Height)
+			wStr = fmt.Sprintf("%.3f", math.Round(entry.Width*100)/100)
+			hStr = fmt.Sprintf("%.3f", math.Round(entry.Height*100)/100)
 		}
 
 		pages = append(pages, &Page{
