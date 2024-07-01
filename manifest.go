@@ -50,7 +50,7 @@ func (b *Manifest) toMM(unit string, x float64) float64 {
 	case "Millimeters":
 		return x
 	case "cm":
-		return x * 100
+		return x * 10
 	case "in":
 		return x * 25.4
 	}
