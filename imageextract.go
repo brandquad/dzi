@@ -25,7 +25,7 @@ func extractImage(filename, basename, _output, iccPath string, splitChannels boo
 		Unit:        "px",
 		ColorMode:   ColorModeCMYK,
 		TextContent: "",
-		Swatches:    make([]Swatch, 0),
+		Swatches:    make([]*Swatch, 0),
 	}
 	output := path.Join(_output, info.Prefix)
 
@@ -75,7 +75,7 @@ func extractImage(filename, basename, _output, iccPath string, splitChannels boo
 	if err = toTiff(refRGB, rgbOutput); err != nil {
 		return nil, err
 	}
-	info.Swatches = append(info.Swatches, Swatch{
+	info.Swatches = append(info.Swatches, &Swatch{
 		Filepath: rgbOutput,
 		Name:     "Color",
 		Type:     Final,
@@ -111,7 +111,7 @@ func extractImage(filename, basename, _output, iccPath string, splitChannels boo
 				return nil, err
 			}
 
-			info.Swatches = append(info.Swatches, Swatch{
+			info.Swatches = append(info.Swatches, &Swatch{
 				Filepath: outputPath,
 				Name:     swatchName,
 				RBG:      CMYK[strings.ToLower(swatchName)],

@@ -124,6 +124,13 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		return nil, err
 	}
 
+	//if Loader == vips.ImageTypePDF {
+	//	// Composite RGB from channels
+	//	if err = rgbCompose(info, channels); err != nil {
+	//		return nil, err
+	//	}
+	//}
+
 	log.Println("Make color DZI ")
 	if err = makeDZI(info, channels, dzi, c); err != nil {
 		return nil, err
@@ -151,7 +158,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 			}
 
 			if needAppend {
-				swatches = append(swatches, &s)
+				swatches = append(swatches, s)
 			}
 
 			if s.Type != Final {

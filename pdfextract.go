@@ -240,7 +240,7 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 		Height:     d.H,
 		Unit:       d.Unit,
 		ColorMode:  ColorModeCMYK,
-		Swatches:   make([]Swatch, 0),
+		Swatches:   make([]*Swatch, 0),
 	}, swatchMap, nil
 }
 
@@ -269,7 +269,7 @@ func pageProcessing(filepath, output, basename string, pageNum int, info *entryI
 		name := entry.Name()
 		swatchName := matchSwatch(name)
 
-		swatchInfo := Swatch{
+		swatchInfo := &Swatch{
 			Filepath: path.Join(output, info.Prefix, entry.Name()),
 			Name:     swatchName,
 			NeedMate: true,
@@ -370,6 +370,7 @@ func runGS(filename string, output string, pageNum, resolution, maxSpots int, sp
 			"-dGridFitTT=2",
 			"-dTextAlphaBits=4",
 			"-dGraphicsAlphaBits=4",
+			"-dOverprint=/simulate",
 			fmt.Sprintf("-dMaxSpots=%d", maxSpots),
 			fmt.Sprintf("-dFirstPage=%d", pageNum),
 			fmt.Sprintf("-dLastPage=%d", pageNum),

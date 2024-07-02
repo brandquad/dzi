@@ -49,6 +49,6 @@ type entryInfo struct {
 	Height      float64
 	ColorMode   ColorMode
 	Unit        string
-	Swatches    []Swatch
+	Swatches    []*Swatch
 	TextContent string
 }
