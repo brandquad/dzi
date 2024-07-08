@@ -203,3 +203,9 @@ func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 
 	return imageRef, nil
 }
+
+func OrPanic(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

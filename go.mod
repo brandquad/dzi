@@ -10,7 +10,7 @@ require (
 	github.com/johbar/go-poppler v1.0.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
-	github.com/nerdtakula/poppler v0.0.0-20201108072532-692805b028a8
+	github.com/rabbitmq/amqp091-go v1.10.0
 )
 
 require (
