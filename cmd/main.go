@@ -22,6 +22,7 @@ type Config struct {
 	DebugMode          bool   `envconfig:"DZI_DEBUG" default:"false"`
 	SplitChannels      bool   `envconfig:"DZI_SPLIT_CHANNELS" default:"true"`
 	HookUrl            string `envconfig:"HOOK_URL"`
+	CopyChannelsToS3   bool   `envconfig:"DZI_COPY_CHANNELS" default:"false"`
 	ICCProfileFilepath string
 }
 
@@ -37,6 +38,7 @@ func (c Config) MakeDziConfig() dzi.Config {
 		CoverHeight:        c.CoverHeight,
 		ICCProfileFilepath: c.ICCProfileFilepath,
 		SplitChannels:      c.SplitChannels,
+		CopyChannelsToS3:   c.CopyChannelsToS3,
 		DebugMode:          false,
 	}
 }
