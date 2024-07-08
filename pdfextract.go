@@ -209,6 +209,20 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 
 	if len(swatchMap) == 0 {
 		for _, s := range d.SwatchGroups {
+			var exists bool
+			for _, pn := range d.PlateNames {
+				sName := strings.TrimSpace(s.SwatchName)
+				pn = strings.TrimSpace(pn)
+				exists = pn == sName || strings.HasPrefix(sName, pn) || strings.HasSuffix(sName, pn)
+				if exists {
+					break
+				}
+			}
+
+			if !exists {
+				continue
+			}
+
 			var c []int
 			switch strings.ToUpper(s.Mode) {
 			case "LAB":
@@ -337,6 +351,11 @@ func extractPDF(filepath string, basename string, output string, resolution int,
 }
 
 func runGS(filename string, output string, pageNum, resolution, maxSpots int, splitChannels bool) error {
+
+	if maxSpots > 59 {
+		maxSpots = 59
+	}
+
 	var args []string
 	if splitChannels {
 		args = []string{

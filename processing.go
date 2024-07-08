@@ -27,6 +27,7 @@ type Config struct {
 	ICCProfileFilepath string
 	SplitChannels      bool
 	DebugMode          bool
+	CopyChannelsToS3   bool
 }
 
 func prepareFolders(folders ...string) error {
@@ -131,14 +132,25 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	//	}
 	//}
 
-	log.Println("Make color DZI ")
+	log.Println("Make Color DZI ")
 	if err = makeDZI(info, channels, dzi, c); err != nil {
 		return nil, err
 	}
 
-	log.Println("Make black and white DZI")
+	log.Println("Make B-W DZI")
 	if err = makeDZI(info, channelsBw, dziBw, c); err != nil {
 		return nil, err
+	}
+
+	if !c.CopyChannelsToS3 {
+		log.Println("Remove Color channels folder")
+		if err = os.RemoveAll(channels); err != nil {
+			return nil, err
+		}
+		log.Println("Remove B-W channels folder")
+		if err = os.RemoveAll(channelsBw); err != nil {
+			return nil, err
+		}
 	}
 
 	log.Println("Make manifest.json")
