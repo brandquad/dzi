@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 type Config struct {
@@ -44,6 +45,9 @@ func (c Config) MakeDziConfig() dzi.Config {
 }
 
 func main() {
+
+	st := time.Now()
+
 	vips.LoggingSettings(func(messageDomain string, verbosity vips.LogLevel, message string) {}, vips.LogLevelInfo)
 	vips.Startup(nil)
 	defer vips.Shutdown()
@@ -76,4 +80,6 @@ func main() {
 	}
 
 	log.Println(manifest)
+
+	log.Println("Total time:", time.Since(st))
 }

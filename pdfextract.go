@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -258,23 +260,55 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 	}, swatchMap, nil
 }
 
-func pageProcessing(filepath, output, basename string, pageNum int, info *entryInfo, swatchMap map[string]Swatch, resolution int, splitChannels bool) (*entryInfo, error) {
-	maxSpots := 0
-	for _, swatch := range swatchMap {
-		if swatch.Type == SpotComponent {
-			maxSpots++
-		}
-	}
-	if splitChannels {
-		if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.tiff", basename)), pageNum, resolution, maxSpots, true); err != nil {
-			return nil, err
-		}
-	}
-	if err := runGS(filepath, path.Join(output, info.Prefix, fmt.Sprintf("%s.jpeg", basename)), pageNum, resolution, maxSpots, false); err != nil {
+func extractPDF(filePath, baseName, outputFolder string, resolution int, splitChannels bool) ([]*entryInfo, error) {
+
+	// Render pages
+	if err := runGS2(filePath, baseName, outputFolder, resolution, splitChannels); err != nil {
 		return nil, err
 	}
 
-	entries, err := os.ReadDir(path.Join(output, info.Prefix))
+	gopopDoc, err := poppler2.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	pages := make([]*entryInfo, 0)
+	totalPages := gopopDoc.GetNPages()
+
+	for pageIndex := 1; pageIndex <= totalPages; pageIndex++ {
+
+		log.Printf("Processing page %d from %d", pageIndex, totalPages)
+		info, swatchMap, err := getEntryInfo(gopopDoc, pageIndex)
+		if err != nil {
+			return nil, err
+		}
+
+		textContent, err := extractText(filePath, pageIndex)
+		if err != nil {
+			return nil, err
+		}
+
+		info.TextContent = textContent
+
+		if (info.Height == 0 || info.Width == 0) && len(pages) > 0 {
+			info.Width = pages[0].Width
+			info.Height = pages[0].Height
+		}
+
+		info, err = pageProcessing(filePath, outputFolder, baseName, pageIndex, info, swatchMap)
+		if err != nil {
+			return nil, err
+		}
+		pages = append(pages, info)
+
+	}
+
+	return pages, nil
+}
+
+func pageProcessing(filepath, outputFolder, basename string, pageNum int, info *entryInfo, swatchMap map[string]Swatch) (*entryInfo, error) {
+
+	entries, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +318,7 @@ func pageProcessing(filepath, output, basename string, pageNum int, info *entryI
 		swatchName := matchSwatch(name)
 
 		swatchInfo := &Swatch{
-			Filepath: path.Join(output, info.Prefix, entry.Name()),
+			Filepath: path.Join(outputFolder, info.Prefix, entry.Name()),
 			Name:     swatchName,
 			NeedMate: true,
 		}
@@ -304,60 +338,16 @@ func pageProcessing(filepath, output, basename string, pageNum int, info *entryI
 
 		info.Swatches = append(info.Swatches, swatchInfo)
 	}
+
 	return info, nil
 }
 
-func extractPDF(filepath string, basename string, output string, resolution int, splitChannels bool) ([]*entryInfo, error) {
-	//gopopDoc, err := poppler1.NewFromFile(filepath, "")
-	gopopDoc, err := poppler2.Open(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	pages := make([]*entryInfo, 0)
-	totalPages := gopopDoc.GetNPages()
-	//totalPages := gopopDoc.GetTotalPages()
-	for pageIndex := 1; pageIndex <= totalPages; pageIndex++ {
-		log.Printf("Processing page %d from %d", pageIndex, totalPages)
-		info, swatchMap, err := getEntryInfo(gopopDoc, pageIndex)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := os.MkdirAll(path.Join(output, info.Prefix), DefaultFolderPerm); err != nil {
-			return nil, err
-		}
-
-		textContent, err := extractText(filepath, pageIndex)
-		if err != nil {
-			return nil, err
-		}
-		info.TextContent = textContent
-
-		if (info.Height == 0 || info.Width == 0) && len(pages) > 0 {
-			info.Width = pages[0].Width
-			info.Height = pages[0].Height
-		}
-
-		info, err = pageProcessing(filepath, output, basename, pageIndex, info, swatchMap, resolution, splitChannels)
-		if err != nil {
-			return nil, err
-		}
-		pages = append(pages, info)
-
-	}
-
-	return pages, nil
-}
-
-func runGS(filename string, output string, pageNum, resolution, maxSpots int, splitChannels bool) error {
-
-	if maxSpots > 59 {
-		maxSpots = 59
-	}
-
+func runGS2(fileName, baseName, outputFolder string, resolution int, splitChannels bool) error {
 	var args []string
+	var maxSpots = 59
+
 	if splitChannels {
+		var output = path.Join(outputFolder, baseName+"(%d).tiff")
 		args = []string{
 			"-q",
 			"-dBATCH",
@@ -370,14 +360,13 @@ func runGS(filename string, output string, pageNum, resolution, maxSpots int, sp
 			"-dTextAlphaBits=4",
 			"-dGraphicsAlphaBits=4",
 			fmt.Sprintf("-dMaxSpots=%d", maxSpots),
-			fmt.Sprintf("-dFirstPage=%d", pageNum),
-			fmt.Sprintf("-dLastPage=%d", pageNum),
 			"-sDEVICE=tiffsep",
 			fmt.Sprintf("-r%d", resolution),
 			fmt.Sprintf("-sOutputFile=%s", output),
-			filename,
+			fileName,
 		}
 	} else {
+		var output = path.Join(outputFolder, baseName+"(%d).jpeg")
 		args = []string{
 			"-q",
 			"-dBATCH",
@@ -391,12 +380,10 @@ func runGS(filename string, output string, pageNum, resolution, maxSpots int, sp
 			"-dGraphicsAlphaBits=4",
 			"-dOverprint=/simulate",
 			fmt.Sprintf("-dMaxSpots=%d", maxSpots),
-			fmt.Sprintf("-dFirstPage=%d", pageNum),
-			fmt.Sprintf("-dLastPage=%d", pageNum),
 			"-sDEVICE=jpeg",
 			fmt.Sprintf("-r%d", resolution),
 			fmt.Sprintf("-sOutputFile=%s", output),
-			filename,
+			fileName,
 		}
 	}
 
@@ -404,8 +391,40 @@ func runGS(filename string, output string, pageNum, resolution, maxSpots int, sp
 		return err
 	}
 
-	if splitChannels {
-		return os.Remove(output)
+	rePageNum := regexp.MustCompile(`\((\d+)\)`)
+
+	var files []string
+	err := filepath.Walk(outputFolder, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && path != outputFolder {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		matches := rePageNum.FindStringSubmatch(file)
+		if len(matches) > 0 {
+			pageFolder := path.Join(outputFolder, fmt.Sprintf("page_%s", matches[1]))
+
+			if _, err := os.Stat(pageFolder); err != nil && os.IsNotExist(err) {
+				if err := os.MkdirAll(pageFolder, DefaultFolderPerm); err != nil {
+					return err
+				}
+			}
+
+			newFileName := path.Base(strings.ReplaceAll(file, fmt.Sprintf("(%s)", matches[1]), ""))
+			newFilePath := path.Join(pageFolder, newFileName)
+
+			if err := cp(file, newFilePath); err != nil {
+				return err
+			}
+			if err := os.Remove(file); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

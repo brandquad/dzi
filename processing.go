@@ -2,7 +2,6 @@ package dzi
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/google/uuid"
 	"log"
@@ -10,7 +9,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const DefaultFolderPerm = 0777
@@ -93,8 +91,13 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		return nil, err
 	}
 
+	defer func() {
+		if probe != nil {
+			probe.Close()
+		}
+	}()
+
 	Loader := probe.OriginalFormat()
-	probe.Close()
 
 	var info []*entryInfo
 	if Loader == vips.ImageTypePDF {
@@ -114,23 +117,14 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		if err != nil {
 			return nil, err
 		}
-		//info = append(info, _info)
 		log.Println("Done.")
 	}
 
 	log.Println("Colorize channels")
-
 	coverHeight, _ := strconv.Atoi(c.CoverHeight)
 	if err = colorize(info, channels, channelsBw, leads, covers, c.ICCProfileFilepath, coverHeight); err != nil {
 		return nil, err
 	}
-
-	//if Loader == vips.ImageTypePDF {
-	//	// Composite RGB from channels
-	//	if err = rgbCompose(info, channels); err != nil {
-	//		return nil, err
-	//	}
-	//}
 
 	log.Println("Make Color DZI ")
 	if err = makeDZI(info, channels, dzi, c); err != nil {
@@ -153,75 +147,15 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		}
 	}
 
-	log.Println("Make manifest.json")
-	swatches := make([]*Swatch, 0)
-	pages := make([]*Page, 0)
-
-	for _, entry := range info {
-		var channelsArr = make([]string, 0)
-
-		for _, s := range entry.Swatches {
-
-			var needAppend bool = true
-			for _, sd := range swatches {
-				if sd.Name == s.Name {
-					needAppend = false
-				}
-			}
-
-			if needAppend {
-				swatches = append(swatches, s)
-			}
-
-			if s.Type != Final {
-				channelsArr = append(channelsArr, s.Name)
-			}
-		}
-
-		var wStr, hStr string
-		if entry.Unit == "px" {
-			wStr = fmt.Sprintf("%d", int(entry.Width))
-			hStr = fmt.Sprintf("%d", int(entry.Height))
-		} else {
-			wStr = fmt.Sprintf("%f", entry.Width)
-			hStr = fmt.Sprintf("%f", entry.Height)
-		}
-
-		pages = append(pages, &Page{
-			PageNum: entry.PageNumber,
-			Size: DziSize{
-				Width:  wStr,
-				Height: hStr,
-				Units:  entry.Unit,
-			},
-			Channels:    channelsArr,
-			TextContent: entry.TextContent,
-		})
-
-	}
-
-	var manifest *Manifest = &Manifest{
-		Version:       "2",
-		ID:            strconv.Itoa(assetId),
-		Timestamp:     time.Now().Format("2006-01-02 15:04:05"),
-		Source:        url,
-		Filename:      filename,
-		Basename:      basename,
-		TileSize:      c.TileSize,
-		CoverHeight:   c.CoverHeight,
-		Dpi:           c.Resolution,
-		Overlap:       c.Overlap,
-		Mode:          "CMYK",
-		Pages:         pages,
-		Swatches:      swatches,
-		SplitChannels: c.SplitChannels,
+	manifest, err := makeManifest(info, assetId, c, url, basename, filename)
+	if err != nil {
+		return nil, err
 	}
 
 	buff, err := json.Marshal(manifest)
 	if err != nil {
 		return nil, err
 	}
-
 	if err = os.WriteFile(path.Join(tmp, "manifest.json"), buff, 0777); err != nil {
 		return nil, err
 	}
@@ -245,43 +179,4 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}()
 
 	return manifest, nil
-}
-
-func makeDZI(info []*entryInfo, income string, outcome string, c Config) error {
-
-	for _, entry := range info {
-
-		sourceFolder := path.Join(income, entry.Prefix)
-		outcomeFolder := path.Join(outcome, entry.Prefix)
-
-		os.MkdirAll(outcomeFolder, DefaultFolderPerm)
-
-		files, err := os.ReadDir(sourceFolder)
-		if err != nil {
-			return err
-		}
-
-		for _, f := range files {
-			if f.IsDir() {
-				continue
-			}
-
-			fpath := path.Join(sourceFolder, f.Name())
-			fext := path.Ext(f.Name())
-			fbasename := strings.TrimSuffix(f.Name(), fext)
-			dziPath := path.Join(outcomeFolder, fbasename)
-
-			if _, err = execCmd("vips", "dzsave",
-				fpath,
-				dziPath,
-				"--strip",
-				"--suffix",
-				".webp",
-				fmt.Sprintf("--tile-size=%s", c.TileSize),
-				fmt.Sprintf("--overlap=%s", c.Overlap)); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

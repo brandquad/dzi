@@ -45,17 +45,23 @@ func colorize(e []*entryInfo, _outputColorized, _outputBw, _leads1000, _covers, 
 		for _, entry := range _e.Swatches {
 
 			log.Printf("Colorize channel %s at page %d", entry.Name, _e.PageNumber)
-
 			ref, err = vips.LoadImageFromFile(entry.Filepath, nil)
 			if err != nil {
 				return err
 			}
+			defer func() {
+				if ref != nil {
+					ref.Close()
+				}
+			}()
 
 			if err = cp(entry.Filepath, path.Join(outputBw, entry.Basename())); err != nil {
 				return err
 			}
 
 			if entry.NeedMate {
+
+				//wg.Add(1)
 
 				rgbMateColor, err := colorful.Hex(entry.RBG)
 				if err != nil {
@@ -94,16 +100,37 @@ func colorize(e []*entryInfo, _outputColorized, _outputBw, _leads1000, _covers, 
 					return err
 				}
 			}
-
 			leads1000Path := path.Join(leads1000, fmt.Sprintf("%s.png", entry.Filename()))
 			coverPath := path.Join(covers, fmt.Sprintf("%s.png", entry.Filename()))
 
-			if _, err = execCmd("vips", "thumbnail", entry.Filepath, leads1000Path, "1000"); err != nil {
+			// X1000
+			var buffer []byte
+			if err = ref.Thumbnail(1000, 1000, vips.InterestingAll); err != nil {
 				return err
 			}
-			if _, err = execCmd("vips", "thumbnail", entry.Filepath, coverPath, "1000", "--height", fmt.Sprintf("%d", coverHeight)); err != nil {
+
+			buffer, _, err = ref.ExportPng(vips.NewPngExportParams())
+			if err != nil {
 				return err
 			}
+
+			if err := os.WriteFile(leads1000Path, buffer, 0777); err != nil {
+				return err
+			}
+
+			// Cover by cover size
+			if err = ref.Thumbnail(coverHeight, coverHeight, vips.InterestingAll); err != nil {
+				return err
+			}
+			buffer, _, err = ref.ExportPng(vips.NewPngExportParams())
+			if err != nil {
+				return err
+			}
+
+			if err := os.WriteFile(coverPath, buffer, 0777); err != nil {
+				return err
+			}
+
 		}
 	}
 
