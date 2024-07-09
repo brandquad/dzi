@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -342,9 +343,62 @@ func pageProcessing(filepath, outputFolder, basename string, pageNum int, info *
 	return info, nil
 }
 
+func gs(filename, output string, firstPage, lastPage, resolution int, splitChannels bool) error {
+	var device = "tiffsep"
+	if !splitChannels {
+		device = "jpeg"
+	}
+
+	args := []string{
+		"-q",
+		"-dBATCH",
+		"-dNOPAUSE",
+		"-dSAFER",
+		"-dSubsetFonts=true",
+		"-dMaxBitmap=500000000",
+		"-dAlignToPixels=0",
+		"-dGridFitTT=2",
+		"-dTextAlphaBits=4",
+		"-dGraphicsAlphaBits=4",
+		"-dMaxSpots=59",
+		fmt.Sprintf("-dFirstPage=%d", firstPage),
+		fmt.Sprintf("-dLastPage=%d", lastPage),
+		fmt.Sprintf("-r%d", resolution),
+		fmt.Sprintf("-sOutputFile=%s", output),
+		fmt.Sprintf("-sDEVICE=%s", device),
+	}
+
+	return nil
+}
+
 func runGS2(fileName, baseName, outputFolder string, resolution int, splitChannels bool) error {
 	var args []string
-	var maxSpots = 59
+
+	//var pageCount int
+	args = []string{
+		"-q",
+		"-dNODISPLAY",
+		fmt.Sprintf("--permit-file-read=%s", fileName),
+		"-c",
+		fmt.Sprintf(`(%s) (r) file runpdfbegin pdfpagecount = quit`, fileName),
+	}
+	out, err := execCmd("gs", args...)
+
+	if err != nil {
+		return err
+	}
+
+	maxPages, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil {
+		return err
+	}
+
+	const chunkSize = 5
+	for i := 0; i < maxPages; i += chunkSize {
+		firstPage := i + 1
+		lastPage := i + chunkSize
+		gs(fileName)
+	}
 
 	if splitChannels {
 		var output = path.Join(outputFolder, baseName+"(%d).tiff")
@@ -359,7 +413,7 @@ func runGS2(fileName, baseName, outputFolder string, resolution int, splitChanne
 			"-dGridFitTT=2",
 			"-dTextAlphaBits=4",
 			"-dGraphicsAlphaBits=4",
-			fmt.Sprintf("-dMaxSpots=%d", maxSpots),
+			"-dMaxSpots=59",
 			"-sDEVICE=tiffsep",
 			fmt.Sprintf("-r%d", resolution),
 			fmt.Sprintf("-sOutputFile=%s", output),
@@ -374,12 +428,13 @@ func runGS2(fileName, baseName, outputFolder string, resolution int, splitChanne
 			"-dSAFER",
 			"-dSubsetFonts=true",
 			"-dMaxBitmap=500000000",
+			"-dNOGC",
 			"-dAlignToPixels=0",
 			"-dGridFitTT=2",
 			"-dTextAlphaBits=4",
 			"-dGraphicsAlphaBits=4",
 			"-dOverprint=/simulate",
-			fmt.Sprintf("-dMaxSpots=%d", maxSpots),
+			"-dMaxSpots=59",
 			"-sDEVICE=jpeg",
 			fmt.Sprintf("-r%d", resolution),
 			fmt.Sprintf("-sOutputFile=%s", output),
@@ -394,7 +449,7 @@ func runGS2(fileName, baseName, outputFolder string, resolution int, splitChanne
 	rePageNum := regexp.MustCompile(`\((\d+)\)`)
 
 	var files []string
-	err := filepath.Walk(outputFolder, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(outputFolder, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() && path != outputFolder {
 			files = append(files, path)
 		}
