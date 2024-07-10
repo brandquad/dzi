@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/alitto/pond v1.9.0 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	golang.org/x/image v0.10.0 // indirect
 	golang.org/x/net v0.17.0 // indirect

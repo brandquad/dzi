@@ -12,18 +12,21 @@ import (
 )
 
 type Config struct {
-	S3Host             string `envconfig:"DZI_S3_HOST" required:"true"`
-	S3Key              string `envconfig:"DZI_S3_KEY" required:"true"`
-	S3Secret           string `envconfig:"DZI_S3_SECRET" required:"true"`
-	S3Bucket           string `envconfig:"DZI_BUCKET" required:"true" default:"dzi"`
-	TileSize           string `envconfig:"DZI_TILE_SIZE" default:"255"`
-	Overlap            string `envconfig:"DZI_OVERLAP" default:"1"`
-	Resolution         string `envconfig:"DZI_RESOLUTION" default:"600"`
-	CoverHeight        string `envconfig:"DZI_COVER_H" default:"300"`
-	DebugMode          bool   `envconfig:"DZI_DEBUG" default:"false"`
-	SplitChannels      bool   `envconfig:"DZI_SPLIT_CHANNELS" default:"true"`
-	HookUrl            string `envconfig:"HOOK_URL"`
-	CopyChannelsToS3   bool   `envconfig:"DZI_COPY_CHANNELS" default:"false"`
+	S3Host             string  `envconfig:"DZI_S3_HOST" required:"true"`
+	S3Key              string  `envconfig:"DZI_S3_KEY" required:"true"`
+	S3Secret           string  `envconfig:"DZI_S3_SECRET" required:"true"`
+	S3Bucket           string  `envconfig:"DZI_BUCKET" required:"true" default:"dzi"`
+	TileSize           string  `envconfig:"DZI_TILE_SIZE" default:"255"`
+	Overlap            string  `envconfig:"DZI_OVERLAP" default:"1"`
+	Resolution         string  `envconfig:"DZI_RESOLUTION" default:"600"`
+	CoverHeight        string  `envconfig:"DZI_COVER_H" default:"300"`
+	DebugMode          bool    `envconfig:"DZI_DEBUG" default:"false"`
+	SplitChannels      bool    `envconfig:"DZI_SPLIT_CHANNELS" default:"true"`
+	HookUrl            string  `envconfig:"HOOK_URL"`
+	CopyChannelsToS3   bool    `envconfig:"DZI_COPY_CHANNELS" default:"false"`
+	MaxCpuCount        int     `envconfig:"MAX_CPU_COUNT" default:"4"`
+	MaxSizePixels      float64 `envconfig:"MAX_SIZE_PIXELS" default:"10000"`
+	DefaultDPI         float64 `envconfig:"DEFAULT_DPI" default:"600"`
 	ICCProfileFilepath string
 }
 
@@ -39,8 +42,11 @@ func (c Config) MakeDziConfig() dzi.Config {
 		CoverHeight:        c.CoverHeight,
 		ICCProfileFilepath: c.ICCProfileFilepath,
 		SplitChannels:      c.SplitChannels,
-		CopyChannelsToS3:   c.CopyChannelsToS3,
 		DebugMode:          false,
+		CopyChannelsToS3:   c.CopyChannelsToS3,
+		DefaultDPI:         c.DefaultDPI,
+		MaxSizePixels:      c.MaxSizePixels,
+		MaxCpuCount:        c.MaxCpuCount,
 	}
 }
 

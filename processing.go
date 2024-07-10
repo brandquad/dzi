@@ -26,6 +26,9 @@ type Config struct {
 	SplitChannels      bool
 	DebugMode          bool
 	CopyChannelsToS3   bool
+	DefaultDPI         float64
+	MaxSizePixels      float64
+	MaxCpuCount        int
 }
 
 func prepareFolders(folders ...string) error {
@@ -106,7 +109,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		if err != nil {
 			return nil, err
 		}
-		info, err = extractPDF(originalFilepath, basename, channels, resolution, c.SplitChannels)
+		info, err = extractPDF(originalFilepath, basename, channels, resolution, c)
 		if err != nil {
 			return nil, err
 		}
