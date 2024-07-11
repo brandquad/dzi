@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/alitto/pond"
-	"strconv"
 	"time"
 
 	//"github.com/alitto/pond"
@@ -18,7 +17,7 @@ import (
 func processSwatch(page *pageInfo, swatch *Swatch, colorizedFolder, bwFolder, leadsFolder, coversFolder string, c Config) error {
 	st := time.Now()
 
-	log.Printf("[>] Colorize channel %s at page %d", swatch.Name, page.PageNumber)
+	log.Printf("[>] Colorize %s page %d", swatch.Name, page.PageNumber)
 	var mateRef *vips.ImageRef
 	ref, err := vips.LoadImageFromFile(swatch.Filepath, nil)
 	if err != nil {
@@ -26,7 +25,7 @@ func processSwatch(page *pageInfo, swatch *Swatch, colorizedFolder, bwFolder, le
 	}
 
 	defer func() {
-		log.Printf("[<] Colorize channel %s at page %d, at %s", swatch.Name, page.PageNumber, time.Since(st))
+		log.Printf("[<] Colorize %s page %d, at %s", swatch.Name, page.PageNumber, time.Since(st))
 		if mateRef != nil {
 			mateRef.Close()
 		}
@@ -89,44 +88,45 @@ func processSwatch(page *pageInfo, swatch *Swatch, colorizedFolder, bwFolder, le
 		}
 	}
 
-	leads1000Path := path.Join(leadsFolder, fmt.Sprintf("%s.png", swatch.Filename()))
-	coverPath := path.Join(coversFolder, fmt.Sprintf("%s.png", swatch.Filename()))
-
-	//X1000
-	var buffer []byte
-	if err = ref.Thumbnail(1000, 1000, vips.InterestingAll); err != nil {
-		return err
-	}
-	//log.Printf("Thimbnail 1000 %s", time.Since(st))
-
-	buffer, _, err = ref.ExportPng(vips.NewPngExportParams())
-	if err != nil {
-		return err
-	}
-	//log.Printf("Export Thimbnail 1000 to PNG %s", time.Since(st))
-
-	if err := os.WriteFile(leads1000Path, buffer, 0777); err != nil {
-		return err
-	}
-
-	//log.Printf("Write Thimbnail 1000 %s", time.Since(st))
-
-	// Cover by cover size
-	coverHeight, _ := strconv.Atoi(c.CoverHeight)
-	if err = ref.Thumbnail(coverHeight, coverHeight, vips.InterestingAll); err != nil {
-		return err
-	}
-	//log.Printf("Thimbnail cover %s", time.Since(st))
-	buffer, _, err = ref.ExportPng(vips.NewPngExportParams())
-	if err != nil {
-		return err
-	}
-	//log.Printf("Export Thimbnail cover to PNG %s", time.Since(st))
-
-	if err := os.WriteFile(coverPath, buffer, 0777); err != nil {
-		return err
-	}
-	//log.Printf("Write Thimbnail cover %s", time.Since(st))
+	//leads1000Path := path.Join(leadsFolder, fmt.Sprintf("%s.png", swatch.Filename()))
+	//coverPath := path.Join(coversFolder, fmt.Sprintf("%s.png", swatch.Filename()))
+	//
+	////X1000
+	//var buffer []byte
+	//
+	//if err = ref.Thumbnail(1000, 1000, vips.InterestingAll); err != nil {
+	//	return err
+	//}
+	////log.Printf("Thimbnail 1000 %s", time.Since(st))
+	//
+	//buffer, _, err = ref.ExportPng(vips.NewPngExportParams())
+	//if err != nil {
+	//	return err
+	//}
+	////log.Printf("Export Thimbnail 1000 to PNG %s", time.Since(st))
+	//
+	//if err := os.WriteFile(leads1000Path, buffer, 0777); err != nil {
+	//	return err
+	//}
+	//
+	////log.Printf("Write Thimbnail 1000 %s", time.Since(st))
+	//
+	//// Cover by cover size
+	//coverHeight, _ := strconv.Atoi(c.CoverHeight)
+	//if err = ref.Thumbnail(coverHeight, coverHeight, vips.InterestingAll); err != nil {
+	//	return err
+	//}
+	////log.Printf("Thimbnail cover %s", time.Since(st))
+	//buffer, _, err = ref.ExportPng(vips.NewPngExportParams())
+	//if err != nil {
+	//	return err
+	//}
+	////log.Printf("Export Thimbnail cover to PNG %s", time.Since(st))
+	//
+	//if err := os.WriteFile(coverPath, buffer, 0777); err != nil {
+	//	return err
+	//}
+	////log.Printf("Write Thimbnail cover %s", time.Since(st))
 
 	return nil
 }

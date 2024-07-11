@@ -64,7 +64,7 @@ func makeManifest(info []*pageInfo, assetId int, c Config, url, basename, filena
 		Basename:      basename,
 		TileSize:      c.TileSize,
 		CoverHeight:   c.CoverHeight,
-		Dpi:           c.Resolution,
+		Dpi:           fmt.Sprintf("%d", c.Resolution),
 		Overlap:       c.Overlap,
 		Mode:          "CMYK",
 		Pages:         pages,

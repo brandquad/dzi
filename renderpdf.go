@@ -212,9 +212,9 @@ func renderPdf(fileName, outputPrefix, basename string, c Config) error {
 	for _, page := range pages {
 		pool.Submit(func() {
 			st := time.Now()
-			log.Printf("[>] Running render page number #%d", page.PageNum)
+			log.Printf("[>] Render page #%d", page.PageNum)
 			defer func() {
-				log.Printf("[<] Running render page number #%d, at %s", page.PageNum, time.Since(st))
+				log.Printf("[<] Render page #%d, at %s", page.PageNum, time.Since(st))
 			}()
 
 			outputFolder := fmt.Sprintf("%s/page_%d", outputPrefix, page.PageNum)

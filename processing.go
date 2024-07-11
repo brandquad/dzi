@@ -12,7 +12,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const DefaultFolderPerm = 0777
@@ -24,7 +23,7 @@ type Config struct {
 	S3Bucket           string
 	TileSize           string
 	Overlap            string
-	Resolution         string
+	Resolution         int
 	CoverHeight        string
 	ICCProfileFilepath string
 	SplitChannels      bool
@@ -81,7 +80,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	basename = uuid.New().String()
 	ext = strings.TrimPrefix(ext, ".")
 
-	log.Println("Resolution:", c.Resolution)
+	log.Println("Max Resolution:", c.Resolution)
 	log.Println("URL:", url)
 	log.Println("AssetId:", assetId)
 	log.Println("Filename:", filename)
@@ -110,11 +109,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	var pages []*pageInfo
 	if Loader == vips.ImageTypePDF {
 		log.Println("Processing as PDF file")
-		resolution, err := strconv.Atoi(c.Resolution)
-		if err != nil {
-			return nil, err
-		}
-		pages, err = extractPDF(originalFilepath, basename, channels, resolution, c)
+		pages, err = extractPDF(originalFilepath, basename, channels, c)
 		if err != nil {
 			return nil, err
 		}
@@ -138,34 +133,19 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		fmt.Printf("Task panicked: %v", p)
 	}
 	pool := pond.New(c.MaxCpuCount, 1000, pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
-	pool.Submit(func() {
-		log.Println("[>] Make Color DZI ")
-		st := time.Now()
-		defer func() {
-			log.Printf("[<] Make Color DZI, at %s", time.Since(st))
-		}()
-
-		if err = makeDZI(pages, channels, dzi, c); err != nil {
-			panic(err)
-		}
-	})
-
-	pool.Submit(func() {
-		log.Println("[>] Make BW DZI ")
-		st := time.Now()
-		defer func() {
-			log.Printf("[<] Make BW DZI, at %s", time.Since(st))
-		}()
-
-		if err = makeDZI(pages, channelsBw, dziBw, c); err != nil {
-			panic(err)
-		}
-	})
+	if err = makeDZI(pool, pages, channels, dzi, c); err != nil {
+		return nil, err
+	}
+	if err = makeDZI(pool, pages, channelsBw, dziBw, c); err != nil {
+		return nil, err
+	}
 
 	pool.StopAndWait()
 	if pool.FailedTasks() > 0 {
 		return nil, errors.New("error on make dzi")
 	}
+
+	makeCovers(dzi, c)
 
 	if !c.CopyChannelsToS3 {
 		log.Println("Remove Color channels folder")

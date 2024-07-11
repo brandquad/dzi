@@ -258,7 +258,7 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Sw
 	}, swatchMap, nil
 }
 
-func extractPDF(filePath, baseName, outputFolder string, resolution int, c Config) ([]*pageInfo, error) {
+func extractPDF(filePath, baseName, outputFolder string, c Config) ([]*pageInfo, error) {
 
 	// Render pages
 	if err := renderPdf(filePath, outputFolder, baseName, c); err != nil {
