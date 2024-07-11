@@ -1,16 +1,25 @@
 package dzi
 
 import (
+	"fmt"
+	"github.com/davidbyttow/govips/v2/vips"
+	"github.com/lucasb-eyer/go-colorful"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
+	"time"
 )
 
-func makeCovers(dziRootPath string, c Config) error {
-	//pageMap := make(map[string]string)
+func makeCovers(dziRootPath, leadsRoot, coversRoot string, c Config) error {
+	st := time.Now()
+	defer func() {
+		log.Println("[<] Make covers, at", time.Since(st))
+	}()
+
 	type ff struct {
 		Num  int
 		Name string
@@ -18,6 +27,7 @@ func makeCovers(dziRootPath string, c Config) error {
 	}
 
 	tileSize, _ := strconv.Atoi(c.TileSize)
+	coverSize, _ := strconv.Atoi(c.CoverHeight)
 
 	pagesFolders, err := os.ReadDir(dziRootPath)
 	if err != nil {
@@ -70,8 +80,7 @@ func makeCovers(dziRootPath string, c Config) error {
 				}
 				maxWidth := len(files) * tileSize
 				if maxWidth <= 2000 {
-					log.Println(maxWidth, f.Path)
-					if err := collectLead(f.Path); err != nil {
+					if err := collectLead(f.Path, leadsRoot, coversRoot, path.Join(pageFolder.Name(), dziFolder.Name()), tileSize, coverSize); err != nil {
 						return err
 					}
 					break
@@ -82,73 +91,78 @@ func makeCovers(dziRootPath string, c Config) error {
 
 	}
 
-	//err := filepath.Walk(dziRootPath, func(pageFolder string, info os.FileInfo, err error) error {
-	//	if pageFolder != dziRootPath && info.IsDir() {
-	//
-	//		err = filepath.Walk(pageFolder, func(dziFileFolder string, subInfo os.FileInfo, err error) error {
-	//
-	//			if dziFileFolder != pageFolder && subInfo.IsDir() && strings.HasSuffix(subInfo.Name(), "_files") {
-	//
-	//				var folders = make([]ff, 0)
-	//				err = filepath.Walk(dziRootPath, func(levelFolder string, subSubInfo os.FileInfo, err error) error {
-	//
-	//					if levelFolder != dziFileFolder && subSubInfo.IsDir() {
-	//						finalFolders, err := os.ReadDir(levelFolder)
-	//						if err != nil {
-	//							return err
-	//						}
-	//						for _, f := range finalFolders {
-	//							if f.IsDir() {
-	//								finalFolderNum, _ := strconv.Atoi(f.Name())
-	//								folders = append(folders, ff{
-	//									Num:  finalFolderNum,
-	//									Name: f.Name(),
-	//									Path: path.Join(levelFolder, f.Name()),
-	//								})
-	//							}
-	//						}
-	//						sort.Slice(folders, func(i, j int) bool {
-	//							return folders[i].Num < folders[j].Num
-	//						})
-	//						for i, j := 0, len(folders)-1; i < j; i, j = i+1, j-1 {
-	//							folders[i], folders[j] = folders[j], folders[i]
-	//						}
-	//						for _, f := range folders {
-	//							files, err := filepath.Glob(path.Join(f.Path, "*_0.webp"))
-	//							if err != nil {
-	//								return err
-	//							}
-	//							maxWidth := len(files) * tileSize
-	//							if maxWidth <= 2000 {
-	//								log.Println(maxWidth, f.Path)
-	//								if err := collectLead(f.Path); err != nil {
-	//									return err
-	//								}
-	//								break
-	//							}
-	//
-	//						}
-	//					}
-	//					return nil
-	//				})
-	//			}
-	//
-	//			return nil
-	//		})
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//	return nil
-	//})
-
 	return err
 
 }
 
-func collectLead(folderPath string) error {
-	//var matrix [][]string
-	//files, err := filepath.Glob(path.Join(folderPath, "*.webp"))
+func collectLead(folderPath, leadsRoot, coversRoot, relpath string, tileSize, coverSize int) error {
+	var tile *vips.ImageRef
+	ref, err := createImage(1, 1, colorful.Color{
+		R: 0,
+		G: 0,
+		B: 0,
+	})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if ref != nil {
+			ref.Close()
+		}
+		if tile != nil {
+			tile.Close()
+		}
+	}()
+
+	files, err := os.ReadDir(folderPath)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		pairs := strings.Split(strings.TrimSuffix(file.Name(), path.Ext(file.Name())), "_")
+		col, _ := strconv.Atoi(pairs[0])
+		row, _ := strconv.Atoi(pairs[1])
+
+		tile, err = vips.NewImageFromFile(path.Join(folderPath, file.Name()))
+		if err != nil {
+			return err
+		}
+		var x, y int
+		x = col * tileSize
+		y = row * tileSize
+
+		if err := ref.Insert(tile, x, y, true, &vips.ColorRGBA{
+			R: 0,
+			G: 0,
+			B: 0,
+			A: 0,
+		}); err != nil {
+			return err
+		}
+	}
+
+	buffer, _, err := ref.ExportPng(vips.NewPngExportParams())
+	if err != nil {
+		return err
+	}
+
+	finalLeadPath := path.Join(leadsRoot, strings.TrimSuffix(relpath, "_files"))
+	if err := os.WriteFile(fmt.Sprintf("%s.png", finalLeadPath), buffer, 0777); err != nil {
+		return err
+	}
+
+	if err := ref.Thumbnail(coverSize, coverSize, vips.InterestingAll); err != nil {
+		return err
+	}
+	buffer, _, err = ref.ExportPng(vips.NewPngExportParams())
+	if err != nil {
+		return err
+	}
+
+	finalCoverPath := path.Join(coversRoot, strings.TrimSuffix(relpath, "_files"))
+	if err := os.WriteFile(fmt.Sprintf("%s.png", finalCoverPath), buffer, 0777); err != nil {
+		return err
+	}
 
 	return nil
 }

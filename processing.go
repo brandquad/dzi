@@ -145,7 +145,9 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		return nil, errors.New("error on make dzi")
 	}
 
-	makeCovers(dzi, c)
+	if err = makeCovers(dzi, leads, covers, c); err != nil {
+		return nil, err
+	}
 
 	if !c.CopyChannelsToS3 {
 		log.Println("Remove Color channels folder")
