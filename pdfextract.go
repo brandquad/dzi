@@ -111,7 +111,7 @@ func extractText(filepath string, pageNum int) (string, error) {
 	return strings.Join(result, ""), err
 }
 
-func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]Swatch, error) {
+func getEntryInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swatch, error) {
 	var wPt, hPt float64
 	p := doc.GetPage(pageNum - 1)
 	wPt, hPt = p.Size()
@@ -247,7 +247,7 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 		}
 	}
 
-	return &entryInfo{
+	return &pageInfo{
 		Prefix:     fmt.Sprintf("page_%d", pageNum),
 		PageNumber: pageNum,
 		Width:      d.W,
@@ -258,7 +258,7 @@ func getEntryInfo(doc *poppler2.Document, pageNum int) (*entryInfo, map[string]S
 	}, swatchMap, nil
 }
 
-func extractPDF(filePath, baseName, outputFolder string, resolution int, c Config) ([]*entryInfo, error) {
+func extractPDF(filePath, baseName, outputFolder string, resolution int, c Config) ([]*pageInfo, error) {
 
 	// Render pages
 	if err := renderPdf(filePath, outputFolder, baseName, c); err != nil {
@@ -270,7 +270,7 @@ func extractPDF(filePath, baseName, outputFolder string, resolution int, c Confi
 		return nil, err
 	}
 
-	pages := make([]*entryInfo, 0)
+	pages := make([]*pageInfo, 0)
 	totalPages := gopopDoc.GetNPages()
 
 	for pageIndex := 1; pageIndex <= totalPages; pageIndex++ {
@@ -280,13 +280,13 @@ func extractPDF(filePath, baseName, outputFolder string, resolution int, c Confi
 		if err != nil {
 			return nil, err
 		}
-
-		textContent, err := extractText(filePath, pageIndex)
-		if err != nil {
-			return nil, err
+		if c.ExtractText {
+			textContent, err := extractText(filePath, pageIndex)
+			if err != nil {
+				return nil, err
+			}
+			info.TextContent = textContent
 		}
-
-		info.TextContent = textContent
 
 		if (info.Height == 0 || info.Width == 0) && len(pages) > 0 {
 			info.Width = pages[0].Width
@@ -298,13 +298,12 @@ func extractPDF(filePath, baseName, outputFolder string, resolution int, c Confi
 			return nil, err
 		}
 		pages = append(pages, info)
-
 	}
 
 	return pages, nil
 }
 
-func pageProcessing(filepath, outputFolder, basename string, pageNum int, info *entryInfo, swatchMap map[string]Swatch) (*entryInfo, error) {
+func pageProcessing(filepath, outputFolder, basename string, pageNum int, info *pageInfo, swatchMap map[string]Swatch) (*pageInfo, error) {
 
 	entries, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
 	if err != nil {
@@ -339,144 +338,3 @@ func pageProcessing(filepath, outputFolder, basename string, pageNum int, info *
 
 	return info, nil
 }
-
-//func gs(filename, output string, firstPage, lastPage, resolution int, splitChannels bool) error {
-//	var device = "tiffsep"
-//	if !splitChannels {
-//		device = "jpeg"
-//	}
-//
-//	args := []string{
-//		"-q",
-//		"-dBATCH",
-//		"-dNOPAUSE",
-//		"-dSAFER",
-//		"-dSubsetFonts=true",
-//		"-dMaxBitmap=500000000",
-//		"-dAlignToPixels=0",
-//		"-dGridFitTT=2",
-//		"-dTextAlphaBits=4",
-//		"-dGraphicsAlphaBits=4",
-//		"-dMaxSpots=59",
-//		fmt.Sprintf("-dFirstPage=%d", firstPage),
-//		fmt.Sprintf("-dLastPage=%d", lastPage),
-//		fmt.Sprintf("-r%d", resolution),
-//		fmt.Sprintf("-sOutputFile=%s", output),
-//		fmt.Sprintf("-sDEVICE=%s", device),
-//	}
-//
-//	return nil
-//}
-
-//func runGS2(fileName, baseName, outputFolder string, resolution int, splitChannels bool) error {
-//	var args []string
-//
-//	//var pageCount int
-//	args = []string{
-//		"-q",
-//		"-dNODISPLAY",
-//		fmt.Sprintf("--permit-file-read=%s", fileName),
-//		"-c",
-//		fmt.Sprintf(`(%s) (r) file runpdfbegin pdfpagecount = quit`, fileName),
-//	}
-//	out, err := execCmd("gs", args...)
-//
-//	if err != nil {
-//		return err
-//	}
-//
-//	maxPages, err := strconv.Atoi(strings.TrimSpace(string(out)))
-//	if err != nil {
-//		return err
-//	}
-//
-//	const chunkSize = 5
-//	for i := 0; i < maxPages; i += chunkSize {
-//		firstPage := i + 1
-//		lastPage := i + chunkSize
-//		gs(fileName)
-//	}
-//
-//	if splitChannels {
-//		var output = path.Join(outputFolder, baseName+"(%d).tiff")
-//		args = []string{
-//			"-q",
-//			"-dBATCH",
-//			"-dNOPAUSE",
-//			"-dSAFER",
-//			"-dSubsetFonts=true",
-//			"-dMaxBitmap=500000000",
-//			"-dAlignToPixels=0",
-//			"-dGridFitTT=2",
-//			"-dTextAlphaBits=4",
-//			"-dGraphicsAlphaBits=4",
-//			"-dMaxSpots=59",
-//			"-sDEVICE=tiffsep",
-//			fmt.Sprintf("-r%d", resolution),
-//			fmt.Sprintf("-sOutputFile=%s", output),
-//			fileName,
-//		}
-//	} else {
-//		var output = path.Join(outputFolder, baseName+"(%d).jpeg")
-//		args = []string{
-//			"-q",
-//			"-dBATCH",
-//			"-dNOPAUSE",
-//			"-dSAFER",
-//			"-dSubsetFonts=true",
-//			"-dMaxBitmap=500000000",
-//			"-dNOGC",
-//			"-dAlignToPixels=0",
-//			"-dGridFitTT=2",
-//			"-dTextAlphaBits=4",
-//			"-dGraphicsAlphaBits=4",
-//			"-dOverprint=/simulate",
-//			"-dMaxSpots=59",
-//			"-sDEVICE=jpeg",
-//			fmt.Sprintf("-r%d", resolution),
-//			fmt.Sprintf("-sOutputFile=%s", output),
-//			fileName,
-//		}
-//	}
-//
-//	if _, err := execCmd("gs", args...); err != nil {
-//		return err
-//	}
-//
-//	rePageNum := regexp.MustCompile(`\((\d+)\)`)
-//
-//	var files []string
-//	err = filepath.Walk(outputFolder, func(path string, info os.FileInfo, err error) error {
-//		if !info.IsDir() && path != outputFolder {
-//			files = append(files, path)
-//		}
-//		return nil
-//	})
-//	if err != nil {
-//		return err
-//	}
-//
-//	for _, file := range files {
-//		matches := rePageNum.FindStringSubmatch(file)
-//		if len(matches) > 0 {
-//			pageFolder := path.Join(outputFolder, fmt.Sprintf("page_%s", matches[1]))
-//
-//			if _, err := os.Stat(pageFolder); err != nil && os.IsNotExist(err) {
-//				if err := os.MkdirAll(pageFolder, DefaultFolderPerm); err != nil {
-//					return err
-//				}
-//			}
-//
-//			newFileName := path.Base(strings.ReplaceAll(file, fmt.Sprintf("(%s)", matches[1]), ""))
-//			newFilePath := path.Join(pageFolder, newFileName)
-//
-//			if err := cp(file, newFilePath); err != nil {
-//				return err
-//			}
-//			if err := os.Remove(file); err != nil {
-//				return err
-//			}
-//		}
-//	}
-//	return nil
-//}

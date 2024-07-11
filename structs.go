@@ -42,7 +42,7 @@ func (s Swatch) Filename() string {
 	return strings.TrimSuffix(s.Basename(), ext)
 }
 
-type entryInfo struct {
+type pageInfo struct {
 	Prefix      string
 	PageNumber  int
 	Width       float64

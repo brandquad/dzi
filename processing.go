@@ -2,6 +2,9 @@ package dzi
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/alitto/pond"
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/google/uuid"
 	"log"
@@ -9,6 +12,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const DefaultFolderPerm = 0777
@@ -29,9 +33,10 @@ type Config struct {
 	DefaultDPI         float64
 	MaxSizePixels      float64
 	MaxCpuCount        int
+	ExtractText        bool
 }
 
-func prepareFolders(folders ...string) error {
+func prepareTopFolders(folders ...string) error {
 	for _, folder := range folders {
 		err := os.MkdirAll(folder, DefaultFolderPerm)
 		if err != nil {
@@ -67,7 +72,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	channelsBw := path.Join(tmp, "channels_bw")
 	covers := path.Join(tmp, "covers")
 
-	if err := prepareFolders(tmp, leads, dzi, dziBw, channels, channelsBw, covers); err != nil {
+	if err := prepareTopFolders(tmp, leads, dzi, dziBw, channels, channelsBw, covers); err != nil {
 		return nil, err
 	}
 
@@ -102,41 +107,64 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 
 	Loader := probe.OriginalFormat()
 
-	var info []*entryInfo
+	var pages []*pageInfo
 	if Loader == vips.ImageTypePDF {
 		log.Println("Processing as PDF file")
 		resolution, err := strconv.Atoi(c.Resolution)
 		if err != nil {
 			return nil, err
 		}
-		info, err = extractPDF(originalFilepath, basename, channels, resolution, c)
+		pages, err = extractPDF(originalFilepath, basename, channels, resolution, c)
 		if err != nil {
 			return nil, err
 		}
-		log.Println("Done.")
+		//log.Println("Done.")
 	} else {
 		log.Println("Processing as Image file")
-		info, err = extractImage(originalFilepath, basename, channels, c.ICCProfileFilepath, c.SplitChannels)
+		pages, err = extractImage(originalFilepath, basename, channels, c.ICCProfileFilepath, c.SplitChannels)
 		if err != nil {
 			return nil, err
 		}
-		log.Println("Done.")
+		//log.Println("Done.")
 	}
 
-	log.Println("Colorize channels")
-	coverHeight, _ := strconv.Atoi(c.CoverHeight)
-	if err = colorize(info, channels, channelsBw, leads, covers, c.ICCProfileFilepath, coverHeight); err != nil {
+	//log.Println("Colorize channels")
+
+	if err = colorize(pages, channels, channelsBw, leads, covers, c); err != nil {
 		return nil, err
 	}
 
-	log.Println("Make Color DZI ")
-	if err = makeDZI(info, channels, dzi, c); err != nil {
-		return nil, err
+	panicHandler := func(p interface{}) {
+		fmt.Printf("Task panicked: %v", p)
 	}
+	pool := pond.New(c.MaxCpuCount, 1000, pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
+	pool.Submit(func() {
+		log.Println("[>] Make Color DZI ")
+		st := time.Now()
+		defer func() {
+			log.Printf("[<] Make Color DZI, at %s", time.Since(st))
+		}()
 
-	log.Println("Make B-W DZI")
-	if err = makeDZI(info, channelsBw, dziBw, c); err != nil {
-		return nil, err
+		if err = makeDZI(pages, channels, dzi, c); err != nil {
+			panic(err)
+		}
+	})
+
+	pool.Submit(func() {
+		log.Println("[>] Make BW DZI ")
+		st := time.Now()
+		defer func() {
+			log.Printf("[<] Make BW DZI, at %s", time.Since(st))
+		}()
+
+		if err = makeDZI(pages, channelsBw, dziBw, c); err != nil {
+			panic(err)
+		}
+	})
+
+	pool.StopAndWait()
+	if pool.FailedTasks() > 0 {
+		return nil, errors.New("error on make dzi")
 	}
 
 	if !c.CopyChannelsToS3 {
@@ -150,7 +178,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		}
 	}
 
-	manifest, err := makeManifest(info, assetId, c, url, basename, filename)
+	manifest, err := makeManifest(pages, assetId, c, url, basename, filename)
 	if err != nil {
 		return nil, err
 	}

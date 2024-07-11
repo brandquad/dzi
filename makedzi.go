@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func makeDZI(info []*entryInfo, income string, outcome string, c Config) error {
+func makeDZI(info []*pageInfo, income string, outcome string, c Config) error {
 
 	for _, entry := range info {
 

@@ -25,8 +25,9 @@ type Config struct {
 	HookUrl            string  `envconfig:"HOOK_URL"`
 	CopyChannelsToS3   bool    `envconfig:"DZI_COPY_CHANNELS" default:"false"`
 	MaxCpuCount        int     `envconfig:"MAX_CPU_COUNT" default:"4"`
-	MaxSizePixels      float64 `envconfig:"MAX_SIZE_PIXELS" default:"10000"`
+	MaxSizePixels      float64 `envconfig:"MAX_SIZE_PIXELS" default:"15000"`
 	DefaultDPI         float64 `envconfig:"DEFAULT_DPI" default:"600"`
+	ExtractText        bool    `envconfig:"DZI_EXTRACT_TEXT" default:"true"`
 	ICCProfileFilepath string
 }
 
@@ -47,6 +48,7 @@ func (c Config) MakeDziConfig() dzi.Config {
 		DefaultDPI:         c.DefaultDPI,
 		MaxSizePixels:      c.MaxSizePixels,
 		MaxCpuCount:        c.MaxCpuCount,
+		ExtractText:        c.ExtractText,
 	}
 }
 
@@ -54,16 +56,18 @@ func main() {
 
 	st := time.Now()
 
-	vips.LoggingSettings(func(messageDomain string, verbosity vips.LogLevel, message string) {}, vips.LogLevelInfo)
-	vips.Startup(nil)
-	defer vips.Shutdown()
-
 	var c Config
 	if err := envconfig.Process("", &c); err != nil {
 		log.Fatalln(err)
 	}
 	c.DebugMode = true
 	c.ICCProfileFilepath = "./icc/CoatedGRACoL2006.icc"
+
+	vips.LoggingSettings(func(messageDomain string, verbosity vips.LogLevel, message string) {}, vips.LogLevelInfo)
+	vips.Startup(&vips.Config{
+		ConcurrencyLevel: c.MaxCpuCount,
+	})
+	defer vips.Shutdown()
 
 	flag.Parse()
 

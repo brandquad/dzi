@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func makeManifest(info []*entryInfo, assetId int, c Config, url, basename, filename string) (*Manifest, error) {
+func makeManifest(info []*pageInfo, assetId int, c Config, url, basename, filename string) (*Manifest, error) {
 	log.Println("Make manifest.json")
 	swatches := make([]*Swatch, 0)
 	pages := make([]*Page, 0)

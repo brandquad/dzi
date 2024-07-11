@@ -8,10 +8,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type pageSize struct {
 	PageNum int
+
+	Spots []string
 
 	WidthPt  float64
 	HeightPt float64
@@ -36,8 +39,8 @@ func field(s, f string) string {
 	return ""
 }
 
-func getPagesDimensions(fileName string, c Config) ([]pageSize, error) {
-	pages := make([]pageSize, 0)
+func getPagesDimensions(fileName string, c Config) ([]*pageSize, error) {
+	pages := make([]*pageSize, 0)
 
 	args := []string{
 		fileName,
@@ -113,19 +116,53 @@ func getPagesDimensions(fileName string, c Config) ([]pageSize, error) {
 				HeightPx: int(heightPx),
 				Dpi:      dpiForPage,
 				Rotate:   rotateFloat,
+				Spots:    []string{"Cyan", "Magenta", "Yellow", "Black"},
 			}
 			break
 		}
 
 		if ps != nil {
-			pages = append(pages, *ps)
+			pages = append(pages, ps)
+		}
+	}
+
+	// Extract spots
+	args = []string{
+		"-q",
+		"-dNODISPLAY",
+		"-dNOSAFER",
+		fmt.Sprintf("-sFile=%s", fileName),
+		"-dDumpFontsNeeded=false",
+		"info.ps",
+	}
+
+	buff, err = execCmd("gs", args...)
+	if err != nil {
+		return nil, err
+	}
+	outputLines = strings.Split(string(buff), "\n")
+	for _, page := range pages {
+		for _, line := range outputLines {
+			if strings.HasPrefix(line, fmt.Sprintf("Page %d", page.PageNum)) {
+				triplet := strings.Split(line, "\t")
+				spotsStr := triplet[2][1 : len(triplet[2])-1]
+				if spotsStr != "" {
+
+					for _, spot := range strings.Split(spotsStr, " #@ ") {
+						spot = strings.TrimSpace(spot)
+						if spot != "" {
+							page.Spots = append(page.Spots, spot)
+						}
+					}
+				}
+			}
 		}
 	}
 
 	return pages, nil
 }
 
-func callGS(filename, output string, page pageSize, device string) error {
+func callGS(filename, output string, page *pageSize, device string) error {
 
 	args := []string{
 		"-q",
@@ -138,13 +175,12 @@ func callGS(filename, output string, page pageSize, device string) error {
 		"-dGridFitTT=2",
 		"-dTextAlphaBits=4",
 		"-dGraphicsAlphaBits=4",
-		//"-dMaxSpots=59",
+		fmt.Sprintf("-dMaxSpots=%d", len(page.Spots)),
 		fmt.Sprintf("-dFirstPage=%d", page.PageNum),
 		fmt.Sprintf("-dLastPage=%d", page.PageNum),
 		fmt.Sprintf("-r%d", int(page.Dpi)),
 		fmt.Sprintf("-dDEVICEWIDTHPOINTS=%.02f", page.WidthPt),
 		fmt.Sprintf("-dDEVIDEHEIGHTPOINTS=%.02f", page.HeightPt),
-
 		fmt.Sprintf("-sOutputFile=%s", output),
 		fmt.Sprintf("-sDEVICE=%s", device),
 		filename,
@@ -155,6 +191,10 @@ func callGS(filename, output string, page pageSize, device string) error {
 }
 
 func renderPdf(fileName, outputPrefix, basename string, c Config) error {
+	st := time.Now()
+	defer func() {
+		log.Println("[*] Total render time:", time.Since(st))
+	}()
 	pages, err := getPagesDimensions(fileName, c)
 	if err != nil {
 		return err
@@ -171,7 +211,11 @@ func renderPdf(fileName, outputPrefix, basename string, c Config) error {
 
 	for _, page := range pages {
 		pool.Submit(func() {
-			log.Printf("Running render page number #%d", page.PageNum)
+			st := time.Now()
+			log.Printf("[>] Running render page number #%d", page.PageNum)
+			defer func() {
+				log.Printf("[<] Running render page number #%d, at %s", page.PageNum, time.Since(st))
+			}()
 
 			outputFolder := fmt.Sprintf("%s/page_%d", outputPrefix, page.PageNum)
 			if err := os.MkdirAll(outputFolder, DefaultFolderPerm); err != nil {
@@ -183,9 +227,6 @@ func renderPdf(fileName, outputPrefix, basename string, c Config) error {
 				if err := callGS(fileName, outputFilepath, page, "tiffsep"); err != nil {
 					panic(err)
 				}
-				//if err := os.Remove(outputFilepath); err != nil {
-				//	panic(err)
-				//}
 			}
 
 			//outputFilepath := fmt.Sprintf("%s/%s.jpeg", outputFolder, basename)

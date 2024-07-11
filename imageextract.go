@@ -9,15 +9,15 @@ import (
 	"strings"
 )
 
-func extractImage(filename, basename, _output, iccPath string, splitChannels bool) ([]*entryInfo, error) {
-	pages := make([]*entryInfo, 1)
+func extractImage(filename, basename, _output, iccPath string, splitChannels bool) ([]*pageInfo, error) {
+	pages := make([]*pageInfo, 1)
 
 	ref, err := vips.LoadImageFromFile(filename, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	info := &entryInfo{
+	info := &pageInfo{
 		Prefix:      "page_1",
 		PageNumber:  1,
 		Width:       float64(ref.Width()),

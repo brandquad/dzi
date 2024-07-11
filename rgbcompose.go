@@ -19,7 +19,7 @@ func convertString(input string) string {
 	return result
 }
 
-func rgbCompose(entries []*entryInfo, channelsPath string) error {
+func rgbCompose(entries []*pageInfo, channelsPath string) error {
 	for _, entry := range entries {
 
 		var (
