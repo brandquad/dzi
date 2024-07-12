@@ -34,14 +34,19 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 			pool.Submit(func() {
 				st := time.Now()
 
-				if !strings.HasSuffix(f.Name(), ".tiff") {
-					log.Println(f.Name, "need transform")
-				}
-
 				fpath := path.Join(sourceFolder, f.Name())
 				fext := path.Ext(f.Name())
 				fbasename := strings.TrimSuffix(f.Name(), fext)
 				dziPath := path.Join(outcomeFolder, fbasename)
+
+				if fext == ".tiff" {
+					jpegPath := path.Join(outcomeFolder, fmt.Sprintf("%s.jpeg", fbasename))
+					out, err := execCmd("vips", "icc_transform", fpath, jpegPath, "srgb")
+					if err != nil {
+						log.Fatalln(err)
+					}
+					log.Println(string(out))
+				}
 
 				defer func() {
 					log.Printf("dzsave for %s, at %s", dziPath, time.Since(st))
