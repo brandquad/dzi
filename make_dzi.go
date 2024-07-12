@@ -40,12 +40,17 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 				dziPath := path.Join(outcomeFolder, fbasename)
 
 				if fext == ".tiff" {
-					jpegPath := path.Join(outcomeFolder, fmt.Sprintf("%s.jpeg", fbasename))
-					out, err := execCmd("vips", "icc_transform", fpath, jpegPath, "srgb")
+					jpegFileName := fmt.Sprintf("%s.jpeg", fbasename)
+					jpegPath := path.Join(sourceFolder, jpegFileName)
+					_, err = execCmd("vips", "icc_transform", fpath, jpegPath, "srgb")
 					if err != nil {
-						log.Fatalln(err)
+						panic(err)
 					}
-					log.Println(string(out))
+
+					if err = os.Remove(fpath); err != nil {
+						panic(err)
+					}
+					fpath = jpegPath
 				}
 
 				defer func() {
