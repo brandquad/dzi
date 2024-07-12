@@ -34,6 +34,10 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 			pool.Submit(func() {
 				st := time.Now()
 
+				if !strings.HasSuffix(f.Name(), ".tiff") {
+					log.Println(f.Name, "need transform")
+				}
+
 				fpath := path.Join(sourceFolder, f.Name())
 				fext := path.Ext(f.Name())
 				fbasename := strings.TrimSuffix(f.Name(), fext)
