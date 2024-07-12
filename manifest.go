@@ -29,6 +29,7 @@ type Manifest struct {
 	Filename      string    `json:"filename"`
 	Basename      string    `json:"basename"`
 	TileSize      string    `json:"tile_size"`
+	TileFormat    string    `json:"tile_format"`
 	CoverHeight   string    `json:"cover_height"`
 	Overlap       string    `json:"overlap"`
 	Mode          string    `json:"mode"`
