@@ -48,7 +48,7 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 					dziPath,
 					"--strip",
 					"--suffix",
-					".webp",
+					fmt.Sprintf(".%s%s", c.TileFormat, c.TileSetting),
 					fmt.Sprintf("--vips-concurrency=%d", c.MaxCpuCount),
 					fmt.Sprintf("--tile-size=%s", c.TileSize),
 					fmt.Sprintf("--overlap=%s", c.Overlap)); err != nil {

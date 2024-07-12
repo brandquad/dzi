@@ -14,15 +14,16 @@ import (
 	"time"
 )
 
+// makeCovers function to construct preview images through DZI tiles
 func makeCovers(dziRootPath, leadsRoot, coversRoot string, c Config) error {
 	st := time.Now()
+	log.Println("[>] Make covers")
 	defer func() {
 		log.Println("[<] Make covers, at", time.Since(st))
 	}()
 
-	type ff struct {
+	type folderStruct struct {
 		Num  int
-		Name string
 		Path string
 	}
 
@@ -51,30 +52,31 @@ func makeCovers(dziRootPath, leadsRoot, coversRoot string, c Config) error {
 			if err != nil {
 				return err
 			}
-			var finalFolders = make([]ff, 0)
+			var finalFolders = make([]folderStruct, 0)
 			for _, levelFolder := range levelFolders {
 				if !levelFolder.IsDir() {
 					continue
 				}
 
 				finalFolderNum, _ := strconv.Atoi(levelFolder.Name())
-				finalFolders = append(finalFolders, ff{
+				finalFolders = append(finalFolders, folderStruct{
 					Num:  finalFolderNum,
-					Name: levelFolder.Name(),
 					Path: path.Join(levelFoldersPath, levelFolder.Name()),
 				})
 
 			}
-
+			// Sort folders by level (Small -> Big)
 			sort.Slice(finalFolders, func(i, j int) bool {
 				return finalFolders[i].Num < finalFolders[j].Num
 			})
+			// Reverse slice
 			for i, j := 0, len(finalFolders)-1; i < j; i, j = i+1, j-1 {
 				finalFolders[i], finalFolders[j] = finalFolders[j], finalFolders[i]
 			}
 
+			// Check each level
 			for _, f := range finalFolders {
-				files, err := filepath.Glob(path.Join(f.Path, "*_0.webp"))
+				files, err := filepath.Glob(path.Join(f.Path, fmt.Sprintf("*_0.%s", c.TileFormat)))
 				if err != nil {
 					return err
 				}
@@ -88,42 +90,42 @@ func makeCovers(dziRootPath, leadsRoot, coversRoot string, c Config) error {
 
 			}
 		}
-
 	}
 
 	return err
 
 }
 
-func collectLead(folderPath, leadsRoot, coversRoot, relpath string, tileSize, coverSize int) error {
-	var tile *vips.ImageRef
-	ref, err := createImage(1, 1, colorful.Color{
-		R: 0,
-		G: 0,
-		B: 0,
-	})
+// collectLead from folder with images and construct result image.
+func collectLead(folderPath, leadsRoot, coversRoot, relPath string, tileSize, coverSize int) error {
+
+	var tileRef *vips.ImageRef
+	targetRef, err := createImage(1, 1, colorful.Color{R: 0, G: 0, B: 0})
 	if err != nil {
 		return err
 	}
+
 	defer func() {
-		if ref != nil {
-			ref.Close()
+		if targetRef != nil {
+			targetRef.Close()
 		}
-		if tile != nil {
-			tile.Close()
+		if tileRef != nil {
+			tileRef.Close()
 		}
 	}()
 
+	// Loop by file and insert each to targetRef image
 	files, err := os.ReadDir(folderPath)
 	if err != nil {
 		return err
 	}
 	for _, file := range files {
+		// 0_3.webp -> [0,3]
 		pairs := strings.Split(strings.TrimSuffix(file.Name(), path.Ext(file.Name())), "_")
 		col, _ := strconv.Atoi(pairs[0])
 		row, _ := strconv.Atoi(pairs[1])
 
-		tile, err = vips.NewImageFromFile(path.Join(folderPath, file.Name()))
+		tileRef, err = vips.NewImageFromFile(path.Join(folderPath, file.Name()))
 		if err != nil {
 			return err
 		}
@@ -131,7 +133,13 @@ func collectLead(folderPath, leadsRoot, coversRoot, relpath string, tileSize, co
 		x = col * tileSize
 		y = row * tileSize
 
-		if err := ref.Insert(tile, x, y, true, &vips.ColorRGBA{
+		if tileRef.Bands() > 3 {
+			if err = tileRef.ToColorSpace(vips.InterpretationSRGB); err != nil {
+				return err
+			}
+		}
+		// Insert tile to target image
+		if err := targetRef.Insert(tileRef, x, y, true, &vips.ColorRGBA{
 			R: 0,
 			G: 0,
 			B: 0,
@@ -141,25 +149,29 @@ func collectLead(folderPath, leadsRoot, coversRoot, relpath string, tileSize, co
 		}
 	}
 
-	buffer, _, err := ref.ExportPng(vips.NewPngExportParams())
+	// Export as PNG data
+	buffer, _, err := targetRef.ExportPng(vips.NewPngExportParams())
 	if err != nil {
 		return err
 	}
 
-	finalLeadPath := path.Join(leadsRoot, strings.TrimSuffix(relpath, "_files"))
+	// Write file to leads folder
+	finalLeadPath := path.Join(leadsRoot, strings.TrimSuffix(relPath, "_files"))
 	if err := os.WriteFile(fmt.Sprintf("%s.png", finalLeadPath), buffer, 0777); err != nil {
 		return err
 	}
 
-	if err := ref.Thumbnail(coverSize, coverSize, vips.InterestingAll); err != nil {
+	// Make cover image based on lead image
+	if err := targetRef.Thumbnail(coverSize, coverSize, vips.InterestingAll); err != nil {
 		return err
 	}
-	buffer, _, err = ref.ExportPng(vips.NewPngExportParams())
+	buffer, _, err = targetRef.ExportPng(vips.NewPngExportParams())
 	if err != nil {
 		return err
 	}
 
-	finalCoverPath := path.Join(coversRoot, strings.TrimSuffix(relpath, "_files"))
+	// Write file to covers folder
+	finalCoverPath := path.Join(coversRoot, strings.TrimSuffix(relPath, "_files"))
 	if err := os.WriteFile(fmt.Sprintf("%s.png", finalCoverPath), buffer, 0777); err != nil {
 		return err
 	}

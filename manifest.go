@@ -11,8 +11,7 @@ type DziSize struct {
 	Width  string `json:"width"`
 	Height string `json:"height"`
 	Units  string `json:"units"`
-	//Dpi     string `json:"dpi"`
-
+	Dpi    string `json:"dpi"`
 }
 
 type Page struct {
@@ -31,7 +30,6 @@ type Manifest struct {
 	Basename      string    `json:"basename"`
 	TileSize      string    `json:"tile_size"`
 	CoverHeight   string    `json:"cover_height"`
-	Dpi           string    `json:"dpi"`
 	Overlap       string    `json:"overlap"`
 	Mode          string    `json:"mode"`
 	Pages         []*Page   `json:"pages"`
@@ -103,7 +101,7 @@ func (b *Manifest) GetDPI(page *Page) float64 {
 	if page.Size.Units == "px" {
 		return 1
 	}
-	return b.toFloat(b.Dpi)
+	return b.toFloat(page.Size.Dpi)
 }
 
 func (b *Manifest) GetPageByIndex(index int) *Page {

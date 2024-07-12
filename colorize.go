@@ -159,7 +159,7 @@ func colorize(pages []*pageInfo, _outputColorized, _outputBw, _leads1000, _cover
 	}()
 
 	panicHandler := func(p interface{}) {
-		fmt.Printf("Task panicked: %v", p)
+		fmt.Printf("[!] Task panicked: %v", p)
 	}
 	pool := pond.New(c.MaxCpuCount, 1000, pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
 

@@ -13,8 +13,10 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 )
 
+// cmyk2rgb converts a CMYK color value to RGB
 func cmyk2rgb(cmyk []float64) []int {
 	var r, g, b float64
 	r = 255.0 * (1 - cmyk[0]/100) * (1 - cmyk[3]/100)
@@ -23,6 +25,7 @@ func cmyk2rgb(cmyk []float64) []int {
 	return []int{int(math.Ceil(r)), int(math.Ceil(g)), int(math.Ceil(b))}
 }
 
+// lab2rgb converts a LAB color value to RGB
 func lab2rgb(lab []float64) []int {
 	var y float64 = (lab[0] + 16) / 116
 	var x float64 = lab[1]/500 + y
@@ -74,19 +77,23 @@ func lab2rgb(lab []float64) []int {
 }
 
 func syncToS3(assetId int, tmp string, c Config) error {
-	log.Println("Copy to S3:", c.S3Host, c.S3Bucket)
+	st := time.Now()
+	log.Println("[>] Copy to S3:", c.S3Host, c.S3Bucket)
+
 	var err error
 
-	os.Setenv("MC_NO_COLOR", "1")
+	if err = os.Setenv("MC_NO_COLOR", "1"); err != nil {
+		return err
+	}
+
 	aliasName := fmt.Sprintf("mediaquad%d", assetId)
 	to := fmt.Sprintf("%s/%s/%d", aliasName, c.S3Bucket, assetId)
 	from := fmt.Sprintf("%s/", tmp)
 
-	log.Println("To:", to)
-	log.Println("From:", from)
-	log.Println("MC Alias:", aliasName)
+	// Copy to s3 through mc commands
 
-	if minioOutput, err := execCmd("mc",
+	// Set alias
+	if _, err := execCmd("mc",
 		"alias",
 		"set",
 		aliasName,
@@ -94,23 +101,25 @@ func syncToS3(assetId int, tmp string, c Config) error {
 		c.S3Key,
 		c.S3Secret); err != nil {
 		return err
-	} else {
-		log.Println(string(minioOutput))
 	}
 
+	// Call mc cp command
 	if _, err = execCmd("mc", "cp", "-r", from, to, "--quiet"); err != nil {
 		return err
 	}
 
 	defer func() {
+
 		if aliasName != "" {
-			log.Println("Remove alias:", aliasName)
+			// Remove alias
 			if _, err := execCmd("mc", "alias", "rm", aliasName); err != nil {
-				log.Printf("Error removing mc alias: %v", err)
+				log.Printf("[!] Error removing mc alias: %v", err)
 			}
 		}
+
+		log.Printf("[<] Copy to S3, at %s", time.Since(st))
 	}()
-	log.Println("Done")
+
 	return nil
 }
 
@@ -132,14 +141,25 @@ func execCmd(command string, args ...string) ([]byte, error) {
 	return output, nil
 }
 
-func extractField(s, f string) (string, bool) {
-	if strings.HasPrefix(s, f) {
-		return strings.TrimSpace(strings.TrimPrefix(s, f)), true
+// field - provides functionality to extract specific fields from a string.
+func field(s, f string) string {
+	for _, l := range strings.Split(s, "\n") {
+		l = strings.TrimSpace(l)
+		if strings.HasPrefix(l, f) {
+			return strings.TrimSpace(strings.TrimPrefix(l, f))
+		}
 	}
-	return "", false
+	return ""
 }
 
+// downloadFileTemporary get url to file and return file object after downloading
 func downloadFileTemporary(link string) (*os.File, error) {
+	st := time.Now()
+	log.Println("[>] Downloading file temporary")
+	defer func() {
+		log.Printf("[<] Downloading %s in %s...", link, time.Since(st))
+	}()
+
 	p := strings.Split(link, ".")
 
 	resp, err := http.Get(link)
@@ -182,6 +202,7 @@ func downloadFileTemporary(link string) (*os.File, error) {
 	return file, file.Sync()
 }
 
+// createImage return empty vips image with a certain width, height and background color
 func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 
 	var cR, cG, cB uint8 = c.RGB255()
@@ -204,8 +225,79 @@ func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 	return imageRef, nil
 }
 
-func OrPanic(err error) {
-	if err != nil {
-		panic(err)
+// callGS just run ghostscript
+func callGS(filename, output string, page *pageSize, device string) error {
+
+	args := []string{
+		"-q",
+		"-dBATCH",
+		"-dNOPAUSE",
+		"-dSAFER",
+		"-dSubsetFonts=true",
+		"-dMaxBitmap=500000000",
+		"-dAlignToPixels=0",
+		"-dGridFitTT=2",
+		"-dTextAlphaBits=4",
+		"-dGraphicsAlphaBits=4",
+		fmt.Sprintf("-dMaxSpots=%d", len(page.Spots)),
+		fmt.Sprintf("-dFirstPage=%d", page.PageNum),
+		fmt.Sprintf("-dLastPage=%d", page.PageNum),
+		fmt.Sprintf("-r%d", page.Dpi),
+		fmt.Sprintf("-dDEVICEWIDTHPOINTS=%.02f", page.WidthPt),
+		fmt.Sprintf("-dDEVIDEHEIGHTPOINTS=%.02f", page.HeightPt),
+		fmt.Sprintf("-sOutputFile=%s", output),
+		fmt.Sprintf("-sDEVICE=%s", device),
+		filename,
+	}
+
+	_, err := execCmd("gs", args...)
+	return err
+}
+
+// esko2swatch convert Esko metadata to Swatch
+func esko2swatch(name, egname, egtype, book string, nr, ng, nb float64) Swatch {
+	var swatchName = name
+	if egtype == "pantone" {
+		switch book {
+		case "pms1000c":
+			swatchName = fmt.Sprintf("PANTONE %s C", egname)
+		case "pms1000u":
+			swatchName = fmt.Sprintf("PANTONE %s U", egname)
+		case "pms1000m":
+			swatchName = fmt.Sprintf("PANTONE %s M", egname)
+		case "goec":
+			swatchName = fmt.Sprintf("PANTONE %s C", egname)
+		case "goeu":
+			swatchName = fmt.Sprintf("PANTONE %s U", egname)
+		case "pmetc":
+			swatchName = fmt.Sprintf("PANTONE %s C", egname)
+		case "ppasc":
+			swatchName = fmt.Sprintf("PANTONE %s C", egname)
+		case "ppasu":
+			swatchName = fmt.Sprintf("PANTONE %s U", egname)
+
+		default:
+			swatchName = name
+		}
+	}
+
+	var swatchType SwatchType
+	switch egtype {
+	case "process":
+		swatchType = CmykComponent
+	case "pantone", "designer":
+		swatchType = SpotComponent
+	}
+
+	var R = 255 * nr / 1
+	var G = 255 * ng / 1
+	var B = 255 * nb / 1
+
+	return Swatch{
+		Filepath: "",
+		Name:     swatchName,
+		RBG:      fmt.Sprintf("#%02x%02x%02x", int(R), int(G), int(B)),
+		Type:     swatchType,
+		NeedMate: true,
 	}
 }

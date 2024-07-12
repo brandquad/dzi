@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 )
 
 type Config struct {
@@ -27,6 +26,8 @@ type Config struct {
 	MaxCpuCount        int     `envconfig:"MAX_CPU_COUNT" default:"4"`
 	MaxSizePixels      float64 `envconfig:"MAX_SIZE_PIXELS" default:"12000"`
 	ExtractText        bool    `envconfig:"DZI_EXTRACT_TEXT" default:"true"`
+	TileFormat         string  `envconfig:"DZI_TILE_FORMAT" default:"jpeg"`
+	TileSetting        string  `envconfig:"DZI_TILE_SETTING" default:"[Q=95,strip]"`
 	ICCProfileFilepath string
 }
 
@@ -48,12 +49,14 @@ func (c Config) MakeDziConfig() dzi.Config {
 		MaxSizePixels:      c.MaxSizePixels,
 		MaxCpuCount:        c.MaxCpuCount,
 		ExtractText:        c.ExtractText,
+		TileFormat:         c.TileFormat,
+		TileSetting:        c.TileSetting,
 	}
 }
 
 func main() {
 
-	st := time.Now()
+	//st := time.Now()
 
 	var c Config
 	if err := envconfig.Process("", &c); err != nil {
@@ -90,5 +93,5 @@ func main() {
 
 	log.Println(manifest)
 
-	log.Println("Total time:", time.Since(st))
+	//log.Println("Total time:", time.Since(st))
 }

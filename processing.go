@@ -12,6 +12,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const DefaultFolderPerm = 0777
@@ -33,6 +34,8 @@ type Config struct {
 	MaxSizePixels      float64
 	MaxCpuCount        int
 	ExtractText        bool
+	TileFormat         string
+	TileSetting        string
 }
 
 func prepareTopFolders(folders ...string) error {
@@ -46,6 +49,11 @@ func prepareTopFolders(folders ...string) error {
 }
 
 func Processing(url string, assetId int, c Config) (*Manifest, error) {
+
+	st := time.Now()
+	defer func() {
+		log.Printf("[***] Processed in %s", time.Since(st))
+	}()
 
 	filename := path.Base(url)
 	var _tmp string
@@ -83,9 +91,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	log.Println("Max Resolution:", c.Resolution)
 	log.Println("URL:", url)
 	log.Println("AssetId:", assetId)
-	log.Println("Filename:", filename)
 	log.Println("Basename:", basename, ext)
-	log.Println("Tmp:", tmp)
 
 	baseFile, err := downloadFileTemporary(url)
 	if err != nil {
@@ -116,7 +122,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		//log.Println("Done.")
 	} else {
 		log.Println("Processing as Image file")
-		pages, err = extractImage(originalFilepath, basename, channels, c.ICCProfileFilepath, c.SplitChannels)
+		pages, err = extractImage(originalFilepath, basename, channels, c)
 		if err != nil {
 			return nil, err
 		}
@@ -129,9 +135,11 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		return nil, err
 	}
 
+	dziSt := time.Now()
 	panicHandler := func(p interface{}) {
-		fmt.Printf("Task panicked: %v", p)
+		fmt.Printf("[!] Task panicked: %v", p)
 	}
+
 	pool := pond.New(c.MaxCpuCount, 1000, pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
 	if err = makeDZI(pool, pages, channels, dzi, c); err != nil {
 		return nil, err
@@ -145,16 +153,18 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		return nil, errors.New("error on make dzi")
 	}
 
+	log.Printf("[*] Total dzsave, at %s", time.Since(dziSt))
+
 	if err = makeCovers(dzi, leads, covers, c); err != nil {
 		return nil, err
 	}
 
 	if !c.CopyChannelsToS3 {
-		log.Println("Remove Color channels folder")
+		log.Println("[-] Remove Color channels folder")
 		if err = os.RemoveAll(channels); err != nil {
 			return nil, err
 		}
-		log.Println("Remove B-W channels folder")
+		log.Println("[-] Remove B-W channels folder")
 		if err = os.RemoveAll(channelsBw); err != nil {
 			return nil, err
 		}
@@ -173,8 +183,10 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		return nil, err
 	}
 
-	if err = syncToS3(assetId, tmp, c); err != nil {
-		return nil, err
+	if !c.DebugMode {
+		if err = syncToS3(assetId, tmp, c); err != nil {
+			return nil, err
+		}
 	}
 
 	defer func() {

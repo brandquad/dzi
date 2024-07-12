@@ -7,15 +7,20 @@ import (
 	"time"
 )
 
-func makeManifest(info []*pageInfo, assetId int, c Config, url, basename, filename string) (*Manifest, error) {
-	log.Println("Make manifest.json")
-	swatches := make([]*Swatch, 0)
-	pages := make([]*Page, 0)
+func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filename string) (*Manifest, error) {
+	st := time.Now()
+	log.Println("[>] Make manifest.json")
+	defer func() {
+		log.Printf("[<] Make manifest.json, at %s", time.Since(st))
+	}()
 
-	for _, entry := range info {
+	swatches := make([]*Swatch, 0)
+	manifestPages := make([]*Page, 0)
+
+	for _, page := range pages {
 		var channelsArr = make([]string, 0)
 
-		for _, s := range entry.Swatches {
+		for _, s := range page.Swatches {
 
 			var needAppend bool = true
 			for _, sd := range swatches {
@@ -23,7 +28,6 @@ func makeManifest(info []*pageInfo, assetId int, c Config, url, basename, filena
 					needAppend = false
 				}
 			}
-
 			if needAppend {
 				swatches = append(swatches, s)
 			}
@@ -34,29 +38,30 @@ func makeManifest(info []*pageInfo, assetId int, c Config, url, basename, filena
 		}
 
 		var wStr, hStr string
-		if entry.Unit == "px" {
-			wStr = fmt.Sprintf("%d", int(entry.Width))
-			hStr = fmt.Sprintf("%d", int(entry.Height))
+		if page.Unit == "px" {
+			wStr = fmt.Sprintf("%d", int(page.Width))
+			hStr = fmt.Sprintf("%d", int(page.Height))
 		} else {
-			wStr = fmt.Sprintf("%f", entry.Width)
-			hStr = fmt.Sprintf("%f", entry.Height)
+			wStr = fmt.Sprintf("%f", page.Width)
+			hStr = fmt.Sprintf("%f", page.Height)
 		}
 
-		pages = append(pages, &Page{
-			PageNum: entry.PageNumber,
+		manifestPages = append(manifestPages, &Page{
+			PageNum: page.PageNumber,
 			Size: DziSize{
 				Width:  wStr,
 				Height: hStr,
-				Units:  entry.Unit,
+				Units:  page.Unit,
+				Dpi:    strconv.Itoa(page.Dpi),
 			},
 			Channels:    channelsArr,
-			TextContent: entry.TextContent,
+			TextContent: page.TextContent,
 		})
 
 	}
 
-	var manifest *Manifest = &Manifest{
-		Version:       "2",
+	var manifest = &Manifest{
+		Version:       "3",
 		ID:            strconv.Itoa(assetId),
 		Timestamp:     time.Now().Format("2006-01-02 15:04:05"),
 		Source:        url,
@@ -64,10 +69,9 @@ func makeManifest(info []*pageInfo, assetId int, c Config, url, basename, filena
 		Basename:      basename,
 		TileSize:      c.TileSize,
 		CoverHeight:   c.CoverHeight,
-		Dpi:           fmt.Sprintf("%d", c.Resolution),
 		Overlap:       c.Overlap,
 		Mode:          "CMYK",
-		Pages:         pages,
+		Pages:         manifestPages,
 		Swatches:      swatches,
 		SplitChannels: c.SplitChannels,
 	}

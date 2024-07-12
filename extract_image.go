@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func extractImage(filename, basename, _output, iccPath string, splitChannels bool) ([]*pageInfo, error) {
+func extractImage(filename, basename, _output string, c Config) ([]*pageInfo, error) {
 	pages := make([]*pageInfo, 1)
 
 	ref, err := vips.LoadImageFromFile(filename, nil)
@@ -26,6 +26,7 @@ func extractImage(filename, basename, _output, iccPath string, splitChannels boo
 		ColorMode:   ColorModeCMYK,
 		TextContent: "",
 		Swatches:    make([]*Swatch, 0),
+		Dpi:         int(c.DefaultDPI),
 	}
 	output := path.Join(_output, info.Prefix)
 
@@ -52,7 +53,7 @@ func extractImage(filename, basename, _output, iccPath string, splitChannels boo
 			return nil, err
 		}
 
-		if err = ref.TransformICCProfile(iccPath); err != nil {
+		if err = ref.TransformICCProfile(c.ICCProfileFilepath); err != nil {
 			return nil, err
 		}
 		if err = ref.ToColorSpace(vips.InterpretationCMYK); err != nil {
@@ -82,7 +83,7 @@ func extractImage(filename, basename, _output, iccPath string, splitChannels boo
 		NeedMate: false,
 	})
 
-	if splitChannels {
+	if c.SplitChannels {
 		bands, err := ref.BandSplit()
 		if err != nil {
 			return nil, err
