@@ -63,7 +63,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	c.DebugMode = true
-	c.ICCProfileFilepath = "./icc/CoatedGRACoL2006.icc"
+	c.ICCProfileFilepath = "./icc/sRGB_Profile.icc"
 
 	vips.LoggingSettings(func(messageDomain string, verbosity vips.LogLevel, message string) {}, vips.LogLevelInfo)
 	vips.Startup(&vips.Config{

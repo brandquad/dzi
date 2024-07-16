@@ -40,9 +40,10 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 				dziPath := path.Join(outcomeFolder, fbasename)
 
 				if fext == ".tiff" {
+					log.Printf("[*] Convert to SRGB with profile %s", c.ICCProfileFilepath)
 					jpegFileName := fmt.Sprintf("%s.jpeg", fbasename)
 					jpegPath := path.Join(sourceFolder, jpegFileName)
-					_, err = execCmd("vips", "icc_transform", fpath, jpegPath, "srgb")
+					_, err = execCmd("vips", "icc_transform", fpath, jpegPath, c.ICCProfileFilepath)
 					if err != nil {
 						panic(err)
 					}
