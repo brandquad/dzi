@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	poppler2 "github.com/johbar/go-poppler"
+	"golang.org/x/text/encoding/charmap"
 	"log"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -210,7 +212,7 @@ func extractPDF(filePath, baseName, outputFolder string, c Config) ([]*pageInfo,
 			page.Height = pages[0].Height
 		}
 
-		page, err = pageProcessing(filePath, outputFolder, baseName, pageIndex, page, swatchMap)
+		page, err = pageProcessing(outputFolder, page, swatchMap)
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +229,7 @@ func extractPDF(filePath, baseName, outputFolder string, c Config) ([]*pageInfo,
 	return pages, nil
 }
 
-func pageProcessing(filepath, outputFolder, basename string, pageNum int, info *pageInfo, swatchMap map[string]Swatch) (*pageInfo, error) {
+func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Swatch) (*pageInfo, error) {
 
 	entries, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
 	if err != nil {
@@ -237,6 +239,18 @@ func pageProcessing(filepath, outputFolder, basename string, pageNum int, info *
 	for _, entry := range entries {
 		name := entry.Name()
 		swatchName := matchSwatch(name)
+
+		// Fix problem with cp-1251 in filenames
+		swatchName, err = url.QueryUnescape(swatchName)
+		if err != nil {
+			return nil, err
+		}
+		dec := charmap.Windows1251.NewDecoder()
+		if out, err := dec.String(swatchName); err != nil {
+			return nil, err
+		} else {
+			swatchName = out
+		}
 
 		swatchInfo := &Swatch{
 			Filepath: path.Join(outputFolder, info.Prefix, entry.Name()),
