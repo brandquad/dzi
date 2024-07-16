@@ -61,7 +61,7 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 	}
 
 	var manifest = &Manifest{
-		Version:       "3",
+		Version:       "4",
 		ID:            strconv.Itoa(assetId),
 		Timestamp:     time.Now().Format("2006-01-02 15:04:05"),
 		Source:        url,

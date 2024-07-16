@@ -10,63 +10,52 @@ import (
 	"time"
 )
 
-func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome string, c Config) error {
+func makeDZI(pool *pond.WorkerPool, pages []*pageInfo, income string, outcome string, c Config) error {
 
-	for _, entry := range info {
-
-		sourceFolder := path.Join(income, entry.Prefix)
-		outcomeFolder := path.Join(outcome, entry.Prefix)
-
+	for _, page := range pages {
+		sourceFolder := path.Join(income, page.Prefix)
+		outcomeFolder := path.Join(outcome, page.Prefix)
 		if err := os.MkdirAll(outcomeFolder, DefaultFolderPerm); err != nil {
 			return err
 		}
 
-		files, err := os.ReadDir(sourceFolder)
-		if err != nil {
-			return err
-		}
-
-		for _, f := range files {
-			if f.IsDir() {
-				continue
-			}
-
+		for _, swatch := range page.Swatches {
 			pool.Submit(func() {
 				st := time.Now()
 
-				fpath := path.Join(sourceFolder, f.Name())
-				fext := path.Ext(f.Name())
-				fbasename := strings.TrimSuffix(f.Name(), fext)
-				dziPath := path.Join(outcomeFolder, fbasename)
+				sourceFilePath := path.Dir(swatch.Filepath)
+				sourceFileExt := path.Ext(swatch.Filepath)
+				sourceBasename := strings.TrimSuffix(strings.TrimPrefix(swatch.Filepath, sourceFilePath), sourceFileExt)[1:]
+				dziPath := path.Join(outcomeFolder, sourceBasename)
 
-				if fext == ".tiff" && !strings.Contains(fpath, "channels_bw") {
+				if sourceFileExt == ".tiff" && !strings.Contains(sourceFilePath, "channels_bw") {
 
-					log.Printf("[*] Convert %s to SRGB with profile %s", fpath, c.ICCProfileFilepath)
+					log.Printf("[*] Convert %s to SRGB with profile %s", swatch.Filepath, c.ICCProfileFilepath)
 
-					jpegFileName := fmt.Sprintf("%s.jpeg", fbasename)
+					jpegFileName := fmt.Sprintf("%s.jpeg", sourceBasename)
 					jpegPath := path.Join(sourceFolder, jpegFileName)
 
 					if c.DebugMode {
-						log.Printf("[D] vips icc_transform %s %s[Q=95] %s", fpath, jpegPath, c.ICCProfileFilepath)
+						log.Printf("[D] vips icc_transform %s %s[Q=95] %s", swatch.Filepath, jpegPath, c.ICCProfileFilepath)
 					}
 
-					_, err = execCmd("vips", "icc_transform", fpath, fmt.Sprintf("%s[Q=95]", jpegPath), c.ICCProfileFilepath)
+					_, err := execCmd("vips", "icc_transform", swatch.Filepath, fmt.Sprintf("%s[Q=95]", jpegPath), c.ICCProfileFilepath)
 					if err != nil {
 						panic(err)
 					}
 
-					if err = os.Remove(fpath); err != nil {
+					if err = os.Remove(swatch.Filepath); err != nil {
 						panic(err)
 					}
-					fpath = jpegPath
+					swatch.Filepath = jpegPath
 				}
 
 				defer func() {
-					log.Printf("[*] dzsave for %s, at %s", fpath, time.Since(st))
+					log.Printf("[*] dzsave for %s , at %s", swatch.Filepath, time.Since(st))
 				}()
 
-				if _, err = execCmd("vips", "dzsave",
-					fpath,
+				if _, err := execCmd("vips", "dzsave",
+					swatch.Filepath,
 					dziPath,
 					"--strip",
 					"--suffix",
@@ -76,9 +65,32 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 					fmt.Sprintf("--overlap=%s", c.Overlap)); err != nil {
 					panic(err)
 				}
+				swatch.DziPath = dziPath
 			})
-
 		}
 	}
+
+	//for _, page := range pages {
+	//
+	//
+	//
+	//	if err := os.MkdirAll(outcomeFolder, DefaultFolderPerm); err != nil {
+	//		return err
+	//	}
+	//
+	//	files, err := os.ReadDir(sourceFolder)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	for _, f := range files {
+	//		if f.IsDir() {
+	//			continue
+	//		}
+	//
+	//
+	//
+	//	}
+	//}
 	return nil
 }

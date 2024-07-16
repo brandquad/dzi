@@ -27,6 +27,7 @@ const (
 
 type Swatch struct {
 	Filepath string     `json:"-"`
+	DziPath  string     `json:"dzi_path"`
 	Name     string     `json:"name"`
 	RBG      string     `json:"rgb"`
 	Type     SwatchType `json:"type"`
