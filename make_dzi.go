@@ -39,7 +39,8 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 				fbasename := strings.TrimSuffix(f.Name(), fext)
 				dziPath := path.Join(outcomeFolder, fbasename)
 
-				if fext == ".tiff" {
+				if fext == ".tiff" && !strings.Contains(fpath, "channels_bw") {
+
 					log.Printf("[*] Convert %s to SRGB with profile %s", fpath, c.ICCProfileFilepath)
 
 					jpegFileName := fmt.Sprintf("%s.jpeg", fbasename)
