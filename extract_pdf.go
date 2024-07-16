@@ -237,23 +237,31 @@ func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Sw
 	}
 
 	for _, entry := range entries {
-		name := entry.Name()
-		swatchName := matchSwatch(name)
+		var name = entry.Name()
+		var filePath = path.Join(outputFolder, info.Prefix, entry.Name())
 
 		// Fix problem with cp-1251 in filenames
-		swatchName, err = url.QueryUnescape(swatchName)
+		name, err = url.QueryUnescape(name)
 		if err != nil {
 			return nil, err
 		}
 		dec := charmap.Windows1251.NewDecoder()
-		if out, err := dec.String(swatchName); err != nil {
+		if out, err := dec.String(name); err != nil {
 			return nil, err
 		} else {
-			swatchName = out
+			name = out
+
+			newFilePath := path.Join(outputFolder, info.Prefix, name)
+			if _, err := execCmd("mv", filePath, newFilePath); err != nil {
+				return nil, err
+			}
+			filePath = newFilePath
 		}
 
+		swatchName := matchSwatch(name)
+
 		swatchInfo := &Swatch{
-			Filepath: path.Join(outputFolder, info.Prefix, entry.Name()),
+			Filepath: filePath,
 			Name:     swatchName,
 			NeedMate: true,
 		}
