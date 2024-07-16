@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -259,6 +260,23 @@ func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Sw
 		}
 
 		swatchName := matchSwatch(name)
+
+		if _, err = os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+			log.Printf("[-] Skipping file %s", filePath)
+			continue
+		}
+
+		// Fix problem with equal spot and cmyk name (ex black1, yellow23)
+		for _, cmykname := range []string{"black", "cyan", "yellow", "magenta"} {
+			sw := strings.ToLower(swatchName)
+			postfix := strings.TrimPrefix(sw, cmykname)
+			if len(postfix) > 0 {
+				if _, err = strconv.Atoi(postfix); err == nil {
+					swatchName = strings.TrimSuffix(swatchName, postfix)
+					break
+				}
+			}
+		}
 
 		swatchInfo := &Swatch{
 			Filepath: filePath,

@@ -47,10 +47,10 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 					jpegPath := path.Join(sourceFolder, jpegFileName)
 
 					if c.DebugMode {
-						log.Printf("[D] vips icc_transform %s %s %s", fpath, jpegPath, c.ICCProfileFilepath)
+						log.Printf("[D] vips icc_transform %s %s[Q=95] %s", fpath, jpegPath, c.ICCProfileFilepath)
 					}
 
-					_, err = execCmd("vips", "icc_transform", fpath, jpegPath, c.ICCProfileFilepath)
+					_, err = execCmd("vips", "icc_transform", fpath, fmt.Sprintf("%s[Q=95]", jpegPath), c.ICCProfileFilepath)
 					if err != nil {
 						panic(err)
 					}
