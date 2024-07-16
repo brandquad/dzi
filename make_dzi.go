@@ -40,9 +40,13 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 				dziPath := path.Join(outcomeFolder, fbasename)
 
 				if fext == ".tiff" {
-					log.Printf("[*] Convert to SRGB with profile %s", c.ICCProfileFilepath)
+					log.Printf("[*] Convert %s to SRGB with profile %s", fpath, c.ICCProfileFilepath)
+
 					jpegFileName := fmt.Sprintf("%s.jpeg", fbasename)
 					jpegPath := path.Join(sourceFolder, jpegFileName)
+
+					log.Println("vips icc_transform %s %s %s", fpath, jpegPath, c.ICCProfileFilepath)
+
 					_, err = execCmd("vips", "icc_transform", fpath, jpegPath, c.ICCProfileFilepath)
 					if err != nil {
 						panic(err)
@@ -55,7 +59,7 @@ func makeDZI(pool *pond.WorkerPool, info []*pageInfo, income string, outcome str
 				}
 
 				defer func() {
-					log.Printf("dzsave for %s, at %s", dziPath, time.Since(st))
+					log.Printf("[*] dzsave for %s, at %s", fpath, time.Since(st))
 				}()
 
 				if _, err = execCmd("vips", "dzsave",
