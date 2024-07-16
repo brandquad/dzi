@@ -28,7 +28,7 @@ type Config struct {
 	ExtractText        bool    `envconfig:"DZI_EXTRACT_TEXT" default:"true"`
 	TileFormat         string  `envconfig:"DZI_TILE_FORMAT" default:"jpeg"`
 	TileSetting        string  `envconfig:"DZI_TILE_SETTING" default:"[Q=95,strip]"`
-	ICCProfileFilepath string
+	ICCProfileFilepath string  `envconfig:"ICC_PROFILE_PATH" default:"./icc/sRGB_Profile.icc"`
 }
 
 func (c Config) MakeDziConfig() dzi.Config {
@@ -43,7 +43,7 @@ func (c Config) MakeDziConfig() dzi.Config {
 		CoverHeight:        c.CoverHeight,
 		ICCProfileFilepath: c.ICCProfileFilepath,
 		SplitChannels:      c.SplitChannels,
-		DebugMode:          false,
+		DebugMode:          c.DebugMode,
 		CopyChannelsToS3:   c.CopyChannelsToS3,
 		DefaultDPI:         float64(c.Resolution),
 		MaxSizePixels:      c.MaxSizePixels,
@@ -62,8 +62,8 @@ func main() {
 	if err := envconfig.Process("", &c); err != nil {
 		log.Fatalln(err)
 	}
-	c.DebugMode = true
-	c.ICCProfileFilepath = "./icc/sRGB_Profile.icc"
+	//c.DebugMode = true
+	//c.ICCProfileFilepath = "./icc/sRGB_Profile.icc"
 
 	vips.LoggingSettings(func(messageDomain string, verbosity vips.LogLevel, message string) {}, vips.LogLevelInfo)
 	vips.Startup(&vips.Config{
