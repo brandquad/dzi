@@ -67,7 +67,7 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income string,
 					fmt.Sprintf("--overlap=%s", c.Overlap)); err != nil {
 					panic(err)
 				}
-				dziPath = strings.TrimPrefix(dziPath, tmpRoot)
+				dziPath = fmt.Sprintf("%s_files/", strings.TrimPrefix(dziPath, tmpRoot))
 				if isBW {
 					swatch.DziBWPath = dziPath
 				} else {
