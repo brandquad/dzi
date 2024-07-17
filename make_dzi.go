@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func makeDZI(pool *pond.WorkerPool, pages []*pageInfo, income string, outcome string, c Config) error {
+func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income string, outcome, tmpRoot string, c Config) error {
 
 	for _, page := range pages {
 		sourceFolder := path.Join(income, page.Prefix)
@@ -24,11 +24,13 @@ func makeDZI(pool *pond.WorkerPool, pages []*pageInfo, income string, outcome st
 				st := time.Now()
 
 				sourceFilePath := path.Dir(swatch.Filepath)
+				//var isBW bool = strings.Contains(sourceFilePath, "channels_bw")
+
 				sourceFileExt := path.Ext(swatch.Filepath)
 				sourceBasename := strings.TrimSuffix(strings.TrimPrefix(swatch.Filepath, sourceFilePath), sourceFileExt)[1:]
 				dziPath := path.Join(outcomeFolder, sourceBasename)
 
-				if sourceFileExt == ".tiff" && !strings.Contains(sourceFilePath, "channels_bw") {
+				if sourceFileExt == ".tiff" && !isBW {
 
 					log.Printf("[*] Convert %s to SRGB with profile %s", swatch.Filepath, c.ICCProfileFilepath)
 
@@ -65,32 +67,15 @@ func makeDZI(pool *pond.WorkerPool, pages []*pageInfo, income string, outcome st
 					fmt.Sprintf("--overlap=%s", c.Overlap)); err != nil {
 					panic(err)
 				}
-				swatch.DziPath = dziPath
+				dziPath = strings.TrimPrefix(dziPath, tmpRoot)
+				if isBW {
+					swatch.DziBWPath = dziPath
+				} else {
+					swatch.DziColorPath = dziPath
+				}
 			})
 		}
 	}
 
-	//for _, page := range pages {
-	//
-	//
-	//
-	//	if err := os.MkdirAll(outcomeFolder, DefaultFolderPerm); err != nil {
-	//		return err
-	//	}
-	//
-	//	files, err := os.ReadDir(sourceFolder)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	for _, f := range files {
-	//		if f.IsDir() {
-	//			continue
-	//		}
-	//
-	//
-	//
-	//	}
-	//}
 	return nil
 }

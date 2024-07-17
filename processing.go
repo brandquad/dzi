@@ -141,10 +141,10 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 
 	pool := pond.New(c.MaxCpuCount, 1000, pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
-	if err = makeDZI(pool, pages, channels, dzi, c); err != nil {
+	if err = makeDZI(pool, false, pages, channels, dzi, _tmp, c); err != nil {
 		return nil, err
 	}
-	if err = makeDZI(pool, pages, channelsBw, dziBw, c); err != nil {
+	if err = makeDZI(pool, true, pages, channelsBw, dziBw, _tmp, c); err != nil {
 		return nil, err
 	}
 

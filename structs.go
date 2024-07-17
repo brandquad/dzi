@@ -26,12 +26,13 @@ const (
 )
 
 type Swatch struct {
-	Filepath string     `json:"-"`
-	DziPath  string     `json:"dzi_path"`
-	Name     string     `json:"name"`
-	RBG      string     `json:"rgb"`
-	Type     SwatchType `json:"type"`
-	NeedMate bool       `json:"need_mate"`
+	Filepath     string     `json:"-"`
+	DziColorPath string     `json:"dzi_color_path"`
+	DziBWPath    string     `json:"dzi_bw_path"`
+	Name         string     `json:"name"`
+	RBG          string     `json:"rgb"`
+	Type         SwatchType `json:"type"`
+	NeedMate     bool       `json:"need_mate"`
 }
 
 func (s Swatch) Basename() string {
