@@ -10,21 +10,20 @@ import (
 	"time"
 )
 
-func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income string, outcome, tmpRoot string, c Config) error {
+func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcome string, c Config) error {
 
-	for _, page := range pages {
+	for padeIdx, page := range pages {
 		sourceFolder := path.Join(income, page.Prefix)
 		outcomeFolder := path.Join(outcome, page.Prefix)
 		if err := os.MkdirAll(outcomeFolder, DefaultFolderPerm); err != nil {
 			return err
 		}
 
-		for _, swatch := range page.Swatches {
+		for swatchIdx, swatch := range page.Swatches {
 			pool.Submit(func() {
 				st := time.Now()
 
 				sourceFilePath := path.Dir(swatch.Filepath)
-				//var isBW bool = strings.Contains(sourceFilePath, "channels_bw")
 
 				sourceFileExt := path.Ext(swatch.Filepath)
 				sourceBasename := strings.TrimSuffix(strings.TrimPrefix(swatch.Filepath, sourceFilePath), sourceFileExt)[1:]
@@ -67,11 +66,14 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income string,
 					fmt.Sprintf("--overlap=%s", c.Overlap)); err != nil {
 					panic(err)
 				}
-				dziPath = fmt.Sprintf("%s_files/", strings.TrimPrefix(dziPath, tmpRoot))
+
+				dziPath = fmt.Sprintf("%s_files/", dziPath)
 				if isBW {
-					swatch.DziBWPath = dziPath
+					pages[padeIdx].Swatches[swatchIdx].DziColorPath = dziPath
+					//swatch.DziColorPath = dziPath
 				} else {
-					swatch.DziColorPath = dziPath
+					pages[padeIdx].Swatches[swatchIdx].DziBWPath = dziPath
+					//swatch.DziBWPath = dziPath
 				}
 			})
 		}

@@ -14,28 +14,37 @@ type DziSize struct {
 	Dpi    string `json:"dpi"`
 }
 
+type Channel struct {
+	Name         string `json:"name"`
+	DziColorPath string `json:"dzi_color_path"`
+	DziBWPath    string `json:"dzi_bw_path"`
+	LeadPath     string `json:"lead_path"`
+	CoverPath    string `json:"cover_path"`
+}
+
 type Page struct {
-	PageNum     int      `json:"pagenum"`
-	Size        DziSize  `json:"size"`
-	TextContent string   `json:"text_content"`
-	Channels    []string `json:"channels"`
+	PageNum     int        `json:"page_num"`
+	Size        DziSize    `json:"size"`
+	TextContent string     `json:"text_content"`
+	Channels    []*Channel `json:"channels"`
 }
 
 type Manifest struct {
-	Version       string    `json:"version"`
-	ID            string    `json:"id"`
-	Timestamp     string    `json:"timestamp"`
-	Source        string    `json:"source"`
-	Filename      string    `json:"filename"`
-	Basename      string    `json:"basename"`
-	TileSize      string    `json:"tile_size"`
-	TileFormat    string    `json:"tile_format"`
-	CoverHeight   string    `json:"cover_height"`
-	Overlap       string    `json:"overlap"`
-	Mode          string    `json:"mode"`
-	Pages         []*Page   `json:"pages"`
-	Swatches      []*Swatch `json:"swatches,omitempty"`
-	SplitChannels bool      `json:"split_channels"`
+	Version        string    `json:"version"`
+	ID             string    `json:"id"`
+	TimestampStart string    `json:"timestamp_start"`
+	TimestampEnd   string    `json:"timestamp_end"`
+	Source         string    `json:"source"`
+	Filename       string    `json:"filename"`
+	Basename       string    `json:"basename"`
+	TileSize       string    `json:"tile_size"`
+	TileFormat     string    `json:"tile_format"`
+	CoverHeight    string    `json:"cover_height"`
+	Overlap        string    `json:"overlap"`
+	Mode           string    `json:"mode"`
+	Pages          []*Page   `json:"pages"`
+	Swatches       []*Swatch `json:"swatches,omitempty"`
+	SplitChannels  bool      `json:"split_channels"`
 }
 
 func (b *Manifest) toMM(unit string, x float64) float64 {

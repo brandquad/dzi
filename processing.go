@@ -119,17 +119,13 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		if err != nil {
 			return nil, err
 		}
-		//log.Println("Done.")
 	} else {
 		log.Println("Processing as Image file")
 		pages, err = extractImage(originalFilepath, basename, channels, c)
 		if err != nil {
 			return nil, err
 		}
-		//log.Println("Done.")
 	}
-
-	//log.Println("Colorize channels")
 
 	if err = colorize(pages, channels, channelsBw, leads, covers, c); err != nil {
 		return nil, err
@@ -141,10 +137,10 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	}
 
 	pool := pond.New(c.MaxCpuCount, 1000, pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
-	if err = makeDZI(pool, false, pages, channels, dzi, _tmp, c); err != nil {
+	if err = makeDZI(pool, false, pages, channels, dzi, c); err != nil {
 		return nil, err
 	}
-	if err = makeDZI(pool, true, pages, channelsBw, dziBw, _tmp, c); err != nil {
+	if err = makeDZI(pool, true, pages, channelsBw, dziBw, c); err != nil {
 		return nil, err
 	}
 
@@ -155,7 +151,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 
 	log.Printf("[*] Total dzsave, at %s", time.Since(dziSt))
 
-	if err = makeCovers(dzi, leads, covers, c); err != nil {
+	if err = makeCovers(pages, leads, covers, c); err != nil {
 		return nil, err
 	}
 
@@ -170,7 +166,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		}
 	}
 
-	manifest, err := makeManifest(pages, assetId, c, url, basename, filename)
+	manifest, err := makeManifest(pages, assetId, c, url, basename, filename, _tmp, st)
 	if err != nil {
 		return nil, err
 	}

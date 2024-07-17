@@ -19,20 +19,20 @@ const (
 )
 
 const (
-	ColorModeCMYK  ColorMode = "CMYK"
-	ColorModeCMYKA ColorMode = "CMYKA"
-	ColorModeRBG   ColorMode = "RBG"
-	ColorModeRBGA  ColorMode = "RBGA"
+	ColorModeCMYK ColorMode = "CMYK"
+	ColorModeRBG  ColorMode = "RBG"
 )
 
 type Swatch struct {
 	Filepath     string     `json:"-"`
-	DziColorPath string     `json:"dzi_color_path"`
-	DziBWPath    string     `json:"dzi_bw_path"`
 	Name         string     `json:"name"`
 	RBG          string     `json:"rgb"`
 	Type         SwatchType `json:"type"`
 	NeedMate     bool       `json:"need_mate"`
+	DziColorPath string     `json:"-"`
+	DziBWPath    string     `json:"-"`
+	LeadPath     string     `json:"-"`
+	CoverPath    string     `json:"-"`
 }
 
 func (s Swatch) Basename() string {
