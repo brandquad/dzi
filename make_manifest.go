@@ -19,7 +19,8 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 	manifestPages := make([]*Page, 0)
 
 	for _, page := range pages {
-		var channelsArr = make([]*Channel, 0)
+		var channels = make([]*ChannelV4, 0)
+		var channelsArr = make([]string, 0)
 
 		for _, s := range page.Swatches {
 
@@ -34,7 +35,8 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 			}
 
 			//if s.Type != Final {
-			channelsArr = append(channelsArr, &Channel{
+			channelsArr = append(channelsArr, s.Name)
+			channels = append(channels, &ChannelV4{
 				Name:         s.Name,
 				DziColorPath: strings.TrimPrefix(s.DziColorPath, tmpRoot),
 				DziBWPath:    strings.TrimPrefix(s.DziBWPath, tmpRoot),
@@ -54,9 +56,9 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 		}
 
 		manifestPages = append(manifestPages, &Page{
-			PageNum: page.PageNumber,
-
+			PageNum:     page.PageNumber,
 			Channels:    channelsArr,
+			ChannelsV4:  channels,
 			TextContent: page.TextContent,
 			Size: DziSize{
 				Width:  wStr,

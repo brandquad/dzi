@@ -14,7 +14,7 @@ type DziSize struct {
 	Dpi    string `json:"dpi"`
 }
 
-type Channel struct {
+type ChannelV4 struct {
 	Name         string `json:"name"`
 	DziColorPath string `json:"dzi_color_path"`
 	DziBWPath    string `json:"dzi_bw_path"`
@@ -23,10 +23,11 @@ type Channel struct {
 }
 
 type Page struct {
-	PageNum     int        `json:"page_num"`
-	Size        DziSize    `json:"size"`
-	TextContent string     `json:"text_content"`
-	Channels    []*Channel `json:"channels"`
+	PageNum     int          `json:"page_num"`
+	Size        DziSize      `json:"size"`
+	TextContent string       `json:"text_content"`
+	ChannelsV4  []*ChannelV4 `json:"channels_v4"`
+	Channels    []string     `json:"channels"`
 }
 
 type Manifest struct {
