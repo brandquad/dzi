@@ -22,41 +22,52 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 		for swatchIdx, swatch := range page.Swatches {
 			pool.Submit(func() {
 				st := time.Now()
+				filepath := swatch.Filepath
+				if isBW {
+					filepath = strings.ReplaceAll(filepath, "/channels/", "/channels_bw/")
+					_ext := path.Ext(filepath)
+					filepath = strings.ReplaceAll(filepath, _ext, ".tiff")
+					if _, err := os.Stat(filepath); os.IsNotExist(err) {
+						log.Println("[-] File does not exist:", filepath)
+						return
+					}
+				}
 
-				sourceFilePath := path.Dir(swatch.Filepath)
+				sourceFilePath := path.Dir(filepath)
 
-				sourceFileExt := path.Ext(swatch.Filepath)
-				sourceBasename := strings.TrimSuffix(strings.TrimPrefix(swatch.Filepath, sourceFilePath), sourceFileExt)[1:]
+				sourceFileExt := path.Ext(filepath)
+				sourceBasename := strings.TrimSuffix(strings.TrimPrefix(filepath, sourceFilePath), sourceFileExt)[1:]
 				dziPath := path.Join(outcomeFolder, sourceBasename)
 
 				if sourceFileExt == ".tiff" && !isBW {
 
-					log.Printf("[*] Convert %s to SRGB with profile %s", swatch.Filepath, c.ICCProfileFilepath)
+					log.Printf("[*] Convert %s to SRGB with profile %s", filepath, c.ICCProfileFilepath)
 
 					jpegFileName := fmt.Sprintf("%s.jpeg", sourceBasename)
 					jpegPath := path.Join(sourceFolder, jpegFileName)
 
 					if c.DebugMode {
-						log.Printf("[D] vips icc_transform %s %s[Q=95] %s", swatch.Filepath, jpegPath, c.ICCProfileFilepath)
+						log.Printf("[D] vips icc_transform %s %s[Q=95] %s", filepath, jpegPath, c.ICCProfileFilepath)
 					}
 
-					_, err := execCmd("vips", "icc_transform", swatch.Filepath, fmt.Sprintf("%s[Q=95]", jpegPath), c.ICCProfileFilepath)
+					_, err := execCmd("vips", "icc_transform", filepath, fmt.Sprintf("%s[Q=95]", jpegPath), c.ICCProfileFilepath)
 					if err != nil {
 						panic(err)
 					}
 
-					if err = os.Remove(swatch.Filepath); err != nil {
+					if err = os.Remove(filepath); err != nil {
 						panic(err)
 					}
+					filepath = jpegPath
 					swatch.Filepath = jpegPath
 				}
 
 				defer func() {
-					log.Printf("[*] dzsave for %s , at %s", swatch.Filepath, time.Since(st))
+					log.Printf("[*] dzsave for %s , at %s", filepath, time.Since(st))
 				}()
 
 				if _, err := execCmd("vips", "dzsave",
-					swatch.Filepath,
+					filepath,
 					dziPath,
 					"--strip",
 					"--suffix",
@@ -69,11 +80,9 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 
 				dziPath = fmt.Sprintf("%s_files/", dziPath)
 				if isBW {
-					pages[padeIdx].Swatches[swatchIdx].DziColorPath = dziPath
-					//swatch.DziColorPath = dziPath
-				} else {
 					pages[padeIdx].Swatches[swatchIdx].DziBWPath = dziPath
-					//swatch.DziBWPath = dziPath
+				} else {
+					pages[padeIdx].Swatches[swatchIdx].DziColorPath = dziPath
 				}
 			})
 		}
