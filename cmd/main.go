@@ -18,6 +18,8 @@ type Config struct {
 	TileSize           string  `envconfig:"DZI_TILE_SIZE" default:"255"`
 	Overlap            string  `envconfig:"DZI_OVERLAP" default:"1"`
 	Resolution         int     `envconfig:"DZI_RESOLUTION" default:"600"`
+	MinResolution      int     `envconfig:"DZI_MIN_RESOLUTION" default:"200"`
+	MaxResolution      int     `envconfig:"DZI_MAX_RESOLUTION" default:"1600"`
 	CoverHeight        string  `envconfig:"DZI_COVER_H" default:"300"`
 	DebugMode          bool    `envconfig:"DZI_DEBUG" default:"false"`
 	SplitChannels      bool    `envconfig:"DZI_SPLIT_CHANNELS" default:"true"`
@@ -46,6 +48,8 @@ func (c Config) MakeDziConfig() dzi.Config {
 		DebugMode:          c.DebugMode,
 		CopyChannelsToS3:   c.CopyChannelsToS3,
 		DefaultDPI:         float64(c.Resolution),
+		MinResolution:      c.MinResolution,
+		MaxResolution:      c.MaxResolution,
 		MaxSizePixels:      c.MaxSizePixels,
 		MaxCpuCount:        c.MaxCpuCount,
 		ExtractText:        c.ExtractText,

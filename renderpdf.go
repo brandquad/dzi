@@ -118,6 +118,13 @@ func getPagesDimensions(fileName string, c Config) ([]*pageSize, error) {
 				needRecalculate = true
 			}
 
+			if int(dpiForPage) < c.MinResolution {
+				dpiForPage = float64(c.MinResolution)
+			}
+			if int(dpiForPage) > c.MinResolution {
+				dpiForPage = float64(c.MaxResolution)
+			}
+
 			if needRecalculate {
 				widthPx = widthInches * dpiForPage
 				heightPx = heightInches * dpiForPage

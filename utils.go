@@ -227,7 +227,7 @@ func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 
 // callGS just run ghostscript
 func callGS(filename, output string, page *pageSize, device string) error {
-
+	log.Printf("[!] Effective DPI for page %d is %d", page.PageNum, page.Dpi)
 	args := []string{
 		"-q",
 		"-dBATCH",

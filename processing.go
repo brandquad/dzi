@@ -25,6 +25,8 @@ type Config struct {
 	TileSize           string
 	Overlap            string
 	Resolution         int
+	MinResolution      int
+	MaxResolution      int
 	CoverHeight        string
 	ICCProfileFilepath string
 	SplitChannels      bool
