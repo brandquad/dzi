@@ -241,20 +241,19 @@ func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Sw
 		var name = entry.Name()
 		var filePath = path.Join(outputFolder, info.Prefix, entry.Name())
 
-		if strings.Contains(filePath, "%") {
+		// Fix problem with cp-1251 in filenames
+		name, err = url.QueryUnescape(name)
+		if err != nil {
+			return nil, err
+		}
+		dec := charmap.Windows1251.NewDecoder()
+		if out, err := dec.String(name); err != nil {
+			return nil, err
+		} else {
+			name = out
 
-			// Fix problem with cp-1251 in filenames
-			name, err = url.QueryUnescape(name)
-			if err != nil {
-				return nil, err
-			}
-			dec := charmap.Windows1251.NewDecoder()
-			if out, err := dec.String(name); err != nil {
-				return nil, err
-			} else {
-				name = out
-
-				newFilePath := path.Join(outputFolder, info.Prefix, name)
+			newFilePath := path.Join(outputFolder, info.Prefix, name)
+			if _, err := os.Stat(newFilePath); errors.Is(err, os.ErrNotExist) {
 				if _, err := execCmd("mv", filePath, newFilePath); err != nil {
 					return nil, err
 				}
