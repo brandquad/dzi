@@ -24,7 +24,7 @@ type Config struct {
 	HookUrl            string  `envconfig:"HOOK_URL"`
 	CopyChannelsToS3   bool    `envconfig:"DZI_COPY_CHANNELS" default:"false"`
 	MaxCpuCount        int     `envconfig:"MAX_CPU_COUNT" default:"4"`
-	MaxSizePixels      float64 `envconfig:"MAX_SIZE_PIXELS" default:"12000"`
+	MaxSizePixels      float64 `envconfig:"MAX_SIZE_PIXELS" default:"15000"`
 	ExtractText        bool    `envconfig:"DZI_EXTRACT_TEXT" default:"true"`
 	TileFormat         string  `envconfig:"DZI_TILE_FORMAT" default:"jpeg"`
 	TileSetting        string  `envconfig:"DZI_TILE_SETTING" default:"[Q=95,strip]"`

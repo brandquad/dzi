@@ -108,6 +108,16 @@ func getPagesDimensions(fileName string, c Config) ([]*pageSize, error) {
 				needRecalculate = true
 			}
 
+			if widthPx < c.MaxSizePixels {
+				dpiForPage = c.MaxSizePixels / widthInches
+				needRecalculate = true
+			}
+
+			if heightPx < c.MaxSizePixels {
+				dpiForPage = c.MaxSizePixels / widthInches
+				needRecalculate = true
+			}
+
 			if needRecalculate {
 				widthPx = widthInches * dpiForPage
 				heightPx = heightInches * dpiForPage
