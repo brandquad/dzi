@@ -3,6 +3,7 @@ package dzi
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,10 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 	defer func() {
 		log.Printf("[<] Make manifest.json, at %s", time.Since(st))
 	}()
+
+	if strings.HasSuffix(tmpRoot, string(os.PathSeparator)) {
+		tmpRoot = strings.TrimSuffix(tmpRoot, string(os.PathSeparator))
+	}
 
 	swatches := make([]*Swatch, 0)
 	manifestPages := make([]*Page, 0)
