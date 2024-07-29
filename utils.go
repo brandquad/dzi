@@ -238,6 +238,7 @@ func callGS(filename, output string, page *pageSize, device string) error {
 		"-dAlignToPixels=1",
 		"-dGridFitTT=0",
 		"-dTextAlphaBits=4",
+		"-dUsePDFX3Profile=0",
 		"-dGraphicsAlphaBits=4",
 		fmt.Sprintf("-dMaxSpots=%d", len(page.Spots)),
 		fmt.Sprintf("-dFirstPage=%d", page.PageNum),
