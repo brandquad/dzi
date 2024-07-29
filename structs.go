@@ -35,9 +35,9 @@ type Swatch struct {
 	Type           SwatchType          `json:"type"`
 	NeedMate       bool                `json:"need_mate"`
 	DziColorPath   string              `json:"-"`
-	DziColorRanges map[string]ZipRange `json:"dzi_color_ranges"`
+	DziColorRanges map[string]ZipRange `json:"-"`
 	DziBWPath      string              `json:"-"`
-	DziBWRanges    map[string]ZipRange `json:"dzi_bw_ranges"`
+	DziBWRanges    map[string]ZipRange `json:"-"`
 	LeadPath       string              `json:"-"`
 	CoverPath      string              `json:"-"`
 }

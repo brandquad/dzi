@@ -80,8 +80,9 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	channels := path.Join(tmp, "channels")
 	channelsBw := path.Join(tmp, "channels_bw")
 	covers := path.Join(tmp, "covers")
+	rangesPath := path.Join(tmp, "ranges")
 
-	if err := prepareTopFolders(tmp, leads, dzi, dziBw, channels, channelsBw, covers); err != nil {
+	if err := prepareTopFolders(tmp, leads, dzi, dziBw, channels, channelsBw, covers, rangesPath); err != nil {
 		return nil, err
 	}
 
@@ -168,7 +169,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 		}
 	}
 
-	manifest, err := makeManifest(pages, assetId, c, url, basename, filename, _tmp, st)
+	manifest, err := makeManifest(pages, assetId, c, url, basename, filename, _tmp, rangesPath, st)
 	if err != nil {
 		return nil, err
 	}

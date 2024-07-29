@@ -1,15 +1,17 @@
 package dzi
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filename, tmpRoot string, startTime time.Time) (*Manifest, error) {
+func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filename, tmpRoot, rangesPath string, startTime time.Time) (*Manifest, error) {
 	st := time.Now()
 	log.Println("[>] Make manifest.json")
 	defer func() {
@@ -38,19 +40,51 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 			if needAppend {
 				swatches = append(swatches, s)
 			}
+			dziColorPath := strings.TrimPrefix(s.DziColorPath, tmpRoot)
+			dziBWPath := strings.TrimPrefix(s.DziBWPath, tmpRoot)
 
-			//if s.Type != Final {
+			colorRangesPath := path.Join(rangesPath, fmt.Sprintf("%d_%s.json", page.PageNumber, s.Name))
+			bwRangesPath := path.Join(rangesPath, fmt.Sprintf("bw_%d_%s.json", page.PageNumber, s.Name))
+
+			if len(s.DziColorRanges) > 0 {
+
+				buffer, err := json.Marshal(s.DziColorRanges)
+				if err != nil {
+					return nil, err
+				}
+				if err := os.WriteFile(colorRangesPath, buffer, 0644); err != nil {
+					return nil, err
+				}
+
+				colorRangesPath = strings.TrimPrefix(colorRangesPath, tmpRoot)
+			} else {
+				colorRangesPath = ""
+			}
+
+			if len(s.DziBWRanges) > 0 {
+				buffer, err := json.Marshal(s.DziBWRanges)
+				if err != nil {
+					return nil, err
+				}
+
+				if err := os.WriteFile(bwRangesPath, buffer, 0644); err != nil {
+					return nil, err
+				}
+				bwRangesPath = strings.TrimPrefix(bwRangesPath, tmpRoot)
+			} else {
+				bwRangesPath = ""
+			}
+
 			channelsArr = append(channelsArr, s.Name)
 			channels = append(channels, &ChannelV4{
-				Name:         s.Name,
-				DziColorPath: strings.TrimPrefix(s.DziColorPath, tmpRoot),
-				DziBWPath:    strings.TrimPrefix(s.DziBWPath, tmpRoot),
-				LeadPath:     strings.TrimPrefix(s.LeadPath, tmpRoot),
-				CoverPath:    strings.TrimPrefix(s.CoverPath, tmpRoot),
-				ColorRanges:  s.DziColorRanges,
-				BwRanges:     s.DziBWRanges,
+				Name:            s.Name,
+				DziColorPath:    dziColorPath,
+				DziBWPath:       dziBWPath,
+				LeadPath:        strings.TrimPrefix(s.LeadPath, tmpRoot),
+				CoverPath:       strings.TrimPrefix(s.CoverPath, tmpRoot),
+				ColorRangesPath: colorRangesPath,
+				BwRangesPath:    bwRangesPath,
 			})
-			//}
 		}
 
 		var wStr, hStr string
