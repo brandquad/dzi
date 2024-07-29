@@ -1,13 +1,14 @@
 package dzi
 
 import (
+	"archive/zip"
 	"fmt"
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/lucasb-eyer/go-colorful"
 	"log"
 	"os"
 	"path"
-	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,70 +25,66 @@ func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c Config) error
 	}()
 
 	type folderStruct struct {
-		Num  int
-		Path string
+		Num   int
+		Path  string
+		Files []string
 	}
 
 	tileSize, _ := strconv.Atoi(c.TileSize)
 	coverSize, _ := strconv.Atoi(c.CoverHeight)
 
+	var archive *zip.ReadCloser
 	var err error
-	//pagesFolders, err := os.ReadDir(dziRootPath)
-	//if err != nil {
-	//	return err
-	//}
 	for _, page := range pages {
-		//if !pageFolder.IsDir() {
-		//	continue
-		//}
-
-		//dziFolders, err := os.ReadDir(path.Join(dziRootPath, pageFolder.Name()))
-		//if err != nil {
-		//	return err
-		//}
 		for _, swatch := range page.Swatches {
-			//if !dziFolder.IsDir() {
-			//	continue
-			//}
-
-			//levelFoldersPath := path.Join(dziRootPath, pageFolder.Name(), dziFolder.Name())
-			levelFoldersPath := swatch.DziColorPath
-			levelFolders, err := os.ReadDir(levelFoldersPath)
+			archive, err = zip.OpenReader(swatch.DziColorPath)
 			if err != nil {
 				return err
 			}
-			var finalFolders = make([]folderStruct, 0)
-			for _, levelFolder := range levelFolders {
-				if !levelFolder.IsDir() {
-					continue
-				}
 
-				finalFolderNum, _ := strconv.Atoi(levelFolder.Name())
-				finalFolders = append(finalFolders, folderStruct{
-					Num:  finalFolderNum,
-					Path: path.Join(levelFoldersPath, levelFolder.Name()),
+			var folders = make([]folderStruct, 0)
+			for _, file := range archive.File {
+
+				dir := path.Dir(file.Name)
+				_p := strings.Split(dir, string(os.PathSeparator))
+				dir = _p[len(_p)-1]
+				folderNum, _ := strconv.Atoi(dir)
+
+				idx := slices.IndexFunc(folders, func(s folderStruct) bool {
+					return s.Num == folderNum
 				})
 
+				if idx == -1 {
+					folderPath := strings.Join(_p, string(os.PathSeparator))
+					files := make([]string, 0)
+					for _, f := range archive.File {
+						if strings.HasSuffix(f.Name, c.TileFormat) && strings.HasPrefix(f.Name, folderPath+string(os.PathSeparator)) {
+							files = append(files, f.Name)
+						}
+					}
+
+					folders = append(folders, folderStruct{
+						Num:   folderNum,
+						Path:  folderPath,
+						Files: files,
+					})
+				}
 			}
 			// Sort folders by level (Small -> Big)
-			sort.Slice(finalFolders, func(i, j int) bool {
-				return finalFolders[i].Num < finalFolders[j].Num
+			sort.Slice(folders, func(i, j int) bool {
+				return folders[i].Num < folders[j].Num
 			})
 			// Reverse slice
-			for i, j := 0, len(finalFolders)-1; i < j; i, j = i+1, j-1 {
-				finalFolders[i], finalFolders[j] = finalFolders[j], finalFolders[i]
+			for i, j := 0, len(folders)-1; i < j; i, j = i+1, j-1 {
+				folders[i], folders[j] = folders[j], folders[i]
 			}
 
 			// Check each level
-			for _, f := range finalFolders {
-				files, err := filepath.Glob(path.Join(f.Path, fmt.Sprintf("*_0.%s", c.TileFormat)))
-				if err != nil {
-					return err
-				}
-				maxWidth := len(files) * tileSize
+			for _, f := range folders {
+				maxWidth := len(f.Files) * tileSize
 				if maxWidth <= 2000 {
 
-					leadPath, coverPath, err := collectLead(f.Path, leadsRoot, coversRoot, page.Prefix, tileSize, coverSize)
+					leadPath, coverPath, err := collectLead(archive, f.Files, f.Path, leadsRoot, coversRoot, page.Prefix, tileSize, coverSize)
 					if err != nil {
 						return err
 					}
@@ -97,6 +94,7 @@ func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c Config) error
 				}
 
 			}
+			archive.Close()
 		}
 	}
 
@@ -105,7 +103,7 @@ func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c Config) error
 }
 
 // collectLead from folder with images and construct result image.
-func collectLead(folderPath, leadsRoot, coversRoot, prefix string, tileSize, coverSize int) (string, string, error) {
+func collectLead(archive *zip.ReadCloser, files []string, folderPath, leadsRoot, coversRoot, prefix string, tileSize, coverSize int) (string, string, error) {
 
 	pathComponents := strings.Split(folderPath, string(os.PathSeparator))
 	filename := pathComponents[len(pathComponents)-2]
@@ -138,20 +136,19 @@ func collectLead(folderPath, leadsRoot, coversRoot, prefix string, tileSize, cov
 		}
 	}()
 
-	// Loop by file and insert each to targetRef image
-	files, err := os.ReadDir(folderPath)
-	if err != nil {
-		return "", "", err
-	}
-
 	for _, file := range files {
 
 		// 0_3.webp -> [0,3]
-		pairs := strings.Split(strings.TrimSuffix(file.Name(), path.Ext(file.Name())), "_")
+		pairs := strings.Split(strings.TrimSuffix(file, path.Ext(file)), "_")
 		col, _ := strconv.Atoi(pairs[0])
 		row, _ := strconv.Atoi(pairs[1])
 
-		tileRef, err = vips.NewImageFromFile(path.Join(folderPath, file.Name()))
+		fp, err := archive.Open(file)
+		if err != nil {
+			return "", "", err
+		}
+
+		tileRef, err = vips.NewImageFromReader(fp)
 		if err != nil {
 			return "", "", err
 		}
@@ -159,6 +156,12 @@ func collectLead(folderPath, leadsRoot, coversRoot, prefix string, tileSize, cov
 		x = col * tileSize
 		y = row * tileSize
 
+		if tileRef.HasAlpha() {
+			// Remove alpha channel
+			if err := tileRef.ExtractBand(0, tileRef.Bands()-1); err != nil {
+				return "", "", err
+			}
+		}
 		if tileRef.Bands() > 3 {
 			if err = tileRef.ToColorSpace(vips.InterpretationSRGB); err != nil {
 				return "", "", err

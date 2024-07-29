@@ -1,6 +1,7 @@
 package dzi
 
 import (
+	"archive/zip"
 	"fmt"
 	"github.com/alitto/pond"
 	"log"
@@ -65,11 +66,13 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 				defer func() {
 					log.Printf("[*] dzsave for %s , at %s", filepath, time.Since(st))
 				}()
-
+				dziPath = fmt.Sprintf("%s.zip", dziPath)
 				if _, err := execCmd("vips", "dzsave",
 					filepath,
 					dziPath,
 					"--strip",
+					"--keep=none",
+					"--container=zip",
 					"--suffix",
 					fmt.Sprintf(".%s%s", c.TileFormat, c.TileSetting),
 					fmt.Sprintf("--vips-concurrency=%d", c.MaxCpuCount),
@@ -78,15 +81,39 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 					panic(err)
 				}
 
-				dziPath = fmt.Sprintf("%s_files/", dziPath)
+				rangesData, err := ranges(dziPath)
+				if err != nil {
+					panic(err)
+				}
+
 				if isBW {
 					pages[padeIdx].Swatches[swatchIdx].DziBWPath = dziPath
+					pages[padeIdx].Swatches[swatchIdx].DziBWRanges = rangesData
 				} else {
 					pages[padeIdx].Swatches[swatchIdx].DziColorPath = dziPath
+					pages[padeIdx].Swatches[swatchIdx].DziColorRanges = rangesData
 				}
 			})
 		}
 	}
 
 	return nil
+}
+
+func ranges(zipfile string) (map[string]ZipRange, error) {
+	result := make(map[string]ZipRange)
+	reader, err := zip.OpenReader(zipfile)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+	for _, file := range reader.File {
+		offset, err := file.DataOffset()
+		if err != nil {
+			return nil, err
+		}
+		result[file.Name] = ZipRange{Offset: uint64(offset), Length: file.CompressedSize64}
+	}
+	return result, nil
+
 }

@@ -23,16 +23,23 @@ const (
 	ColorModeRBG  ColorMode = "RBG"
 )
 
+type ZipRange struct {
+	Offset uint64 `json:"offset"`
+	Length uint64 `json:"length"`
+}
+
 type Swatch struct {
-	Filepath     string     `json:"-"`
-	Name         string     `json:"name"`
-	RBG          string     `json:"rgb"`
-	Type         SwatchType `json:"type"`
-	NeedMate     bool       `json:"need_mate"`
-	DziColorPath string     `json:"-"`
-	DziBWPath    string     `json:"-"`
-	LeadPath     string     `json:"-"`
-	CoverPath    string     `json:"-"`
+	Filepath       string              `json:"-"`
+	Name           string              `json:"name"`
+	RBG            string              `json:"rgb"`
+	Type           SwatchType          `json:"type"`
+	NeedMate       bool                `json:"need_mate"`
+	DziColorPath   string              `json:"-"`
+	DziColorRanges map[string]ZipRange `json:"dzi_color_ranges"`
+	DziBWPath      string              `json:"-"`
+	DziBWRanges    map[string]ZipRange `json:"dzi_bw_ranges"`
+	LeadPath       string              `json:"-"`
+	CoverPath      string              `json:"-"`
 }
 
 func (s Swatch) Basename() string {

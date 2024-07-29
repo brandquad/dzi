@@ -47,6 +47,8 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 				DziBWPath:    strings.TrimPrefix(s.DziBWPath, tmpRoot),
 				LeadPath:     strings.TrimPrefix(s.LeadPath, tmpRoot),
 				CoverPath:    strings.TrimPrefix(s.CoverPath, tmpRoot),
+				ColorRanges:  s.DziColorRanges,
+				BwRanges:     s.DziBWRanges,
 			})
 			//}
 		}
@@ -76,7 +78,7 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 	}
 
 	var manifest = &Manifest{
-		Version:        "4",
+		Version:        "5",
 		ID:             strconv.Itoa(assetId),
 		TimestampStart: startTime.Format("2006-01-02 15:04:05"),
 		TimestampEnd:   time.Now().Format("2006-01-02 15:04:05"),

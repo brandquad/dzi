@@ -28,8 +28,8 @@ type Config struct {
 	MaxCpuCount        int     `envconfig:"MAX_CPU_COUNT" default:"4"`
 	MaxSizePixels      float64 `envconfig:"MAX_SIZE_PIXELS" default:"15000"`
 	ExtractText        bool    `envconfig:"DZI_EXTRACT_TEXT" default:"true"`
-	TileFormat         string  `envconfig:"DZI_TILE_FORMAT" default:"jpeg"`
-	TileSetting        string  `envconfig:"DZI_TILE_SETTING" default:"[Q=95,strip]"`
+	TileFormat         string  `envconfig:"DZI_TILE_FORMAT" default:"png"`
+	TileSetting        string  `envconfig:"DZI_TILE_SETTING" default:""`
 	ICCProfileFilepath string  `envconfig:"ICC_PROFILE_PATH" default:"./icc/sRGB_Profile.icc"`
 }
 
