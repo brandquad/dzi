@@ -108,11 +108,18 @@ func ranges(zipfile string) (map[string]ZipRange, error) {
 	}
 	defer reader.Close()
 	for _, file := range reader.File {
+		if strings.HasSuffix(file.Name, ".dzi") || strings.HasSuffix(file.Name, ".xml") {
+			continue
+		}
+
 		offset, err := file.DataOffset()
 		if err != nil {
 			return nil, err
 		}
-		result[file.Name] = ZipRange{Offset: uint64(offset), Length: file.CompressedSize64}
+
+		parts := strings.Split(file.Name, "/")
+		name := path.Join(parts[len(parts)-2], parts[len(parts)-1])
+		result[name] = ZipRange{Offset: uint64(offset), Length: file.CompressedSize64}
 	}
 	return result, nil
 

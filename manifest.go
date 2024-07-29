@@ -15,13 +15,13 @@ type DziSize struct {
 }
 
 type ChannelV4 struct {
-	Name            string `json:"name"`
-	DziColorPath    string `json:"dzi_color_path"`
-	DziBWPath       string `json:"dzi_bw_path"`
-	LeadPath        string `json:"lead_path"`
-	CoverPath       string `json:"cover_path"`
-	ColorRangesPath string `json:"color_ranges_path"`
-	BwRangesPath    string `json:"bw_ranges_path"`
+	Name         string              `json:"name"`
+	DziColorPath string              `json:"dzi_color_path"`
+	DziBWPath    string              `json:"dzi_bw_path"`
+	LeadPath     string              `json:"lead_path"`
+	CoverPath    string              `json:"cover_path"`
+	ColorRanges  map[string]ZipRange `json:"color_ranges"`
+	BwRangesPath string              `json:"bw_ranges_path"`
 }
 
 type Page struct {

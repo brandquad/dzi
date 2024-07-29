@@ -43,23 +43,7 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 			dziColorPath := strings.TrimPrefix(s.DziColorPath, tmpRoot)
 			dziBWPath := strings.TrimPrefix(s.DziBWPath, tmpRoot)
 
-			colorRangesPath := path.Join(rangesPath, fmt.Sprintf("%d_%s.json", page.PageNumber, s.Name))
 			bwRangesPath := path.Join(rangesPath, fmt.Sprintf("bw_%d_%s.json", page.PageNumber, s.Name))
-
-			if len(s.DziColorRanges) > 0 {
-
-				buffer, err := json.Marshal(s.DziColorRanges)
-				if err != nil {
-					return nil, err
-				}
-				if err := os.WriteFile(colorRangesPath, buffer, 0644); err != nil {
-					return nil, err
-				}
-
-				colorRangesPath = strings.TrimPrefix(colorRangesPath, tmpRoot)
-			} else {
-				colorRangesPath = ""
-			}
 
 			if len(s.DziBWRanges) > 0 {
 				buffer, err := json.Marshal(s.DziBWRanges)
@@ -77,13 +61,13 @@ func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filen
 
 			channelsArr = append(channelsArr, s.Name)
 			channels = append(channels, &ChannelV4{
-				Name:            s.Name,
-				DziColorPath:    dziColorPath,
-				DziBWPath:       dziBWPath,
-				LeadPath:        strings.TrimPrefix(s.LeadPath, tmpRoot),
-				CoverPath:       strings.TrimPrefix(s.CoverPath, tmpRoot),
-				ColorRangesPath: colorRangesPath,
-				BwRangesPath:    bwRangesPath,
+				Name:         s.Name,
+				DziColorPath: dziColorPath,
+				DziBWPath:    dziBWPath,
+				LeadPath:     strings.TrimPrefix(s.LeadPath, tmpRoot),
+				CoverPath:    strings.TrimPrefix(s.CoverPath, tmpRoot),
+				ColorRanges:  s.DziColorRanges,
+				BwRangesPath: bwRangesPath,
 			})
 		}
 
