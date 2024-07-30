@@ -20,8 +20,8 @@ type pageSize struct {
 	WidthPt  float64
 	HeightPt float64
 
-	Width  float64
-	Height float64
+	WidthInch  float64
+	HeightInch float64
 
 	WidthPx  int
 	HeightPx int
@@ -87,59 +87,59 @@ func getPagesDimensions(fileName string, c Config) ([]*pageSize, error) {
 				return nil, err
 			}
 
-			dpiForPage := c.DefaultDPI
+			dpi := c.DefaultDPI
 
 			// Convert PostScript points to Inches
 			widthInches := widthFloat * pt2in
 			heightInches := heightFloat * pt2in
 
 			// Convert Inches to pixels
-			widthPx := widthInches * dpiForPage
-			heightPx := heightInches * dpiForPage
+			widthPx := widthInches * dpi
+			heightPx := heightInches * dpi
 
 			// Recalculate Dpi value based on max size in pixels
 			var needRecalculate bool
 			if widthPx > c.MaxSizePixels {
-				dpiForPage = c.MaxSizePixels / widthInches
+				dpi = c.MaxSizePixels / widthInches
 				needRecalculate = true
 			}
 			if heightPx > c.MaxSizePixels {
-				dpiForPage = c.MaxSizePixels / widthInches
+				dpi = c.MaxSizePixels / heightInches
 				needRecalculate = true
 			}
 
-			if widthPx < c.MaxSizePixels {
-				dpiForPage = c.MaxSizePixels / widthInches
+			if !needRecalculate && widthPx < c.MaxSizePixels {
+				dpi = c.MaxSizePixels / widthInches
 				needRecalculate = true
 			}
 
-			if heightPx < c.MaxSizePixels {
-				dpiForPage = c.MaxSizePixels / widthInches
+			if !needRecalculate && heightPx < c.MaxSizePixels {
+				dpi = c.MaxSizePixels / heightInches
 				needRecalculate = true
 			}
 
-			if int(dpiForPage) < c.MinResolution {
-				dpiForPage = float64(c.MinResolution)
+			if int(dpi) < c.MinResolution {
+				dpi = float64(c.MinResolution)
 			}
-			if int(dpiForPage) > c.MaxResolution {
-				dpiForPage = float64(c.MaxResolution)
+			if int(dpi) > c.MaxResolution {
+				dpi = float64(c.MaxResolution)
 			}
 
 			if needRecalculate {
-				widthPx = widthInches * dpiForPage
-				heightPx = heightInches * dpiForPage
+				widthPx = widthInches * dpi
+				heightPx = heightInches * dpi
 			}
 			ps = &pageSize{
-				PageNum:  i,
-				WidthPt:  widthFloat,
-				HeightPt: heightFloat,
-				Width:    widthInches,
-				Height:   heightInches,
-				WidthPx:  int(math.Ceil(widthPx)),
-				HeightPx: int(math.Ceil(heightPx)),
-				Dpi:      int(math.Ceil(dpiForPage)),
-				Rotate:   rotateFloat,
-				Spots:    []string{"Cyan", "Magenta", "Yellow", "Black"},
+				PageNum:    i,
+				WidthPt:    widthFloat,
+				HeightPt:   heightFloat,
+				WidthInch:  widthInches,
+				HeightInch: heightInches,
+				WidthPx:    int(math.Ceil(widthPx)),
+				HeightPx:   int(math.Ceil(heightPx)),
+				Dpi:        int(math.Ceil(dpi)),
+				Rotate:     rotateFloat,
+				Spots:      []string{"Cyan", "Magenta", "Yellow", "Black"},
 			}
 			break
 		}
@@ -159,7 +159,7 @@ func getPagesDimensions(fileName string, c Config) ([]*pageSize, error) {
 		"info.ps",
 	}
 	buff, err = execCmd("gs", args...)
-	if err != nil {
+	if err != nil && len(buff) == 0 {
 		return nil, err
 	}
 
@@ -197,6 +197,15 @@ func renderPdf(fileName, outputPrefix, basename string, c Config) ([]*pageSize, 
 	log.Println("MaxCpuNum:", c.MaxCpuCount)
 	log.Println("PagesCount:", len(pages))
 
+	splitChannels := c.SplitChannels
+	for _, page := range pages {
+		if page.HeightPx > 25000 || page.WidthPx > 25000 {
+			splitChannels = false
+			log.Println("[!] Split channels disabled. It oversize.")
+			break
+		}
+	}
+
 	panicHandler := func(p interface{}) {
 		fmt.Printf("[!] Task panicked: %v", p)
 	}
@@ -216,7 +225,7 @@ func renderPdf(fileName, outputPrefix, basename string, c Config) ([]*pageSize, 
 				panic(err)
 			}
 
-			if c.SplitChannels {
+			if splitChannels {
 				outputFilepath := fmt.Sprintf("%s/%s.tiff", outputFolder, basename)
 				if err := callGS(fileName, outputFilepath, page, "tiffsep"); err != nil {
 					panic(err)

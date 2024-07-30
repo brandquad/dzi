@@ -31,9 +31,9 @@ func extractText(filepath string, pageNum int) (string, error) {
 }
 
 func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swatch, error) {
-	var wPt, hPt float64
-	p := doc.GetPage(pageNum - 1)
-	wPt, hPt = p.Size()
+	//var wPt, hPt float64
+	//p := doc.GetPage(pageNum - 1)
+	//wPt, hPt = p.Size()
 
 	xmlString := doc.Info().Metadata
 	var d pdfMeta
@@ -50,34 +50,34 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 			return nil, nil, err
 		}
 	}
-	var egType, pdfType bool
+	//var egType, pdfType bool
 
-	if wPt == 0 && hPt == 0 {
-
-		if d.W > 0 && d.H > 0 {
-			pdfType = true
-			d.W = d.W
-			d.H = d.H
-		} else if eg.W > 0 && eg.H > 0 {
-			egType = true
-
-			d.W = eg.W
-			d.H = eg.H
-
-			if eg.Unit == "mm" {
-				d.Unit = "Millimeters"
-			} else {
-				d.W /= pt2mm
-				d.H /= pt2mm
-				d.Unit = "Points"
-			}
-		} else {
-			return nil, nil, errors.New("page size not defined")
-		}
-	} else {
-		d.W = wPt
-		d.H = hPt
-	}
+	//if wPt == 0 && hPt == 0 {
+	//
+	//	if d.W > 0 && d.H > 0 {
+	//		pdfType = true
+	//		d.W = d.W
+	//		d.H = d.H
+	//	} else if eg.W > 0 && eg.H > 0 {
+	//		egType = true
+	//
+	//		d.W = eg.W
+	//		d.H = eg.H
+	//
+	//		if eg.Unit == "mm" {
+	//			d.Unit = "Millimeters"
+	//		} else {
+	//			d.W /= pt2mm
+	//			d.H /= pt2mm
+	//			d.Unit = "Points"
+	//		}
+	//	} else {
+	//		return nil, nil, errors.New("page size not defined")
+	//	}
+	//} else {
+	//	d.W = wPt
+	//	d.H = hPt
+	//}
 
 	swatchMap := make(map[string]Swatch)
 	if len(eg.Inks) > 0 && len(d.SwatchGroups) == 0 {
@@ -87,44 +87,44 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 		}
 	}
 
-	if d.Unit == "" {
-		d.Unit = "Millimeters"
-	}
-
-	if !egType && !pdfType {
-		switch d.Unit {
-		case "Millimeters":
-			d.W /= pt2mm
-			d.H /= pt2mm
-
-		case "Centimeters":
-			d.Unit = "cm"
-			d.W /= pt2cm
-			d.H /= pt2cm
-
-		case "Inches":
-			d.Unit = "in"
-			d.W /= pt2in
-			d.H /= pt2in
-
-		case "Points":
-			d.Unit = "mm"
-			d.W /= pt2mm
-			d.H /= pt2mm
-
-		}
-	}
-
-	switch d.Unit {
-	case "Millimeters":
-		d.Unit = "mm"
-	case "Centimeters":
-		d.Unit = "cm"
-	case "Inches":
-		d.Unit = "in"
-	case "Points":
-		d.Unit = "mm"
-	}
+	//if d.Unit == "" {
+	//	d.Unit = "Millimeters"
+	//}
+	//
+	//if !egType && !pdfType {
+	//	switch d.Unit {
+	//	case "Millimeters":
+	//		d.W /= pt2mm
+	//		d.H /= pt2mm
+	//
+	//	case "Centimeters":
+	//		d.Unit = "cm"
+	//		d.W /= pt2cm
+	//		d.H /= pt2cm
+	//
+	//	case "Inches":
+	//		d.Unit = "in"
+	//		d.W /= pt2in
+	//		d.H /= pt2in
+	//
+	//	case "Points":
+	//		d.Unit = "mm"
+	//		d.W /= pt2mm
+	//		d.H /= pt2mm
+	//
+	//	}
+	//}
+	//
+	//switch d.Unit {
+	//case "Millimeters":
+	//	d.Unit = "mm"
+	//case "Centimeters":
+	//	d.Unit = "cm"
+	//case "Inches":
+	//	d.Unit = "in"
+	//case "Points":
+	//	d.Unit = "mm"
+	//}
 
 	if len(swatchMap) == 0 {
 		for _, s := range d.SwatchGroups {
@@ -208,11 +208,6 @@ func extractPDF(filePath, baseName, outputFolder string, c Config) ([]*pageInfo,
 			page.TextContent = textContent
 		}
 
-		if (page.Height == 0 || page.Width == 0) && len(pages) > 0 {
-			page.Width = pages[0].Width
-			page.Height = pages[0].Height
-		}
-
 		page, err = pageProcessing(outputFolder, page, swatchMap)
 		if err != nil {
 			return nil, err
@@ -221,6 +216,9 @@ func extractPDF(filePath, baseName, outputFolder string, c Config) ([]*pageInfo,
 		for _, ps := range pagesSizes {
 			if ps.PageNum == pageIndex {
 				page.Dpi = ps.Dpi
+				page.Width = ps.WidthPt / pt2mm
+				page.Height = ps.HeightPt / pt2mm
+				page.Unit = "mm"
 			}
 		}
 
