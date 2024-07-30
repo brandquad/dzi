@@ -75,14 +75,14 @@ func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c Config) error
 				return folders[i].Num < folders[j].Num
 			})
 			// Reverse slice
-			for i, j := 0, len(folders)-1; i < j; i, j = i+1, j-1 {
-				folders[i], folders[j] = folders[j], folders[i]
-			}
+			//for i, j := 0, len(folders)-1; i < j; i, j = i+1, j-1 {
+			//	folders[i], folders[j] = folders[j], folders[i]
+			//}
 
 			// Check each level
 			for _, f := range folders {
 				maxWidth := len(f.Files) * tileSize
-				if maxWidth <= 2000 {
+				if maxWidth >= 2000 {
 
 					leadPath, coverPath, err := collectLead(archive, f.Files, f.Path, leadsRoot, coversRoot, page.Prefix, tileSize, coverSize)
 					if err != nil {
@@ -138,8 +138,11 @@ func collectLead(archive *zip.ReadCloser, files []string, folderPath, leadsRoot,
 
 	for _, file := range files {
 
+		pairS1 := strings.Split(file, "/")
+		pairS2 := pairS1[len(pairS1)-1]
+
 		// 0_3.webp -> [0,3]
-		pairs := strings.Split(strings.TrimSuffix(file, path.Ext(file)), "_")
+		pairs := strings.Split(strings.TrimSuffix(pairS2, path.Ext(file)), "_")
 		col, _ := strconv.Atoi(pairs[0])
 		row, _ := strconv.Atoi(pairs[1])
 

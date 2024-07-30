@@ -194,14 +194,15 @@ func renderPdf(fileName, outputPrefix, basename string, c Config) ([]*pageSize, 
 		return nil, err
 	}
 
-	log.Println("MaxCpuNum:", c.MaxCpuCount)
-	log.Println("PagesCount:", len(pages))
+	log.Println("[!] Pages count:", len(pages))
 
 	splitChannels := c.SplitChannels
 	for _, page := range pages {
-		if page.HeightPx > 25000 || page.WidthPx > 25000 {
+		aspect := float64(page.WidthPx) / float64(page.HeightPx)
+
+		if (aspect < 0.4 || aspect > 1.6) && page.Dpi < 200 {
 			splitChannels = false
-			log.Println("[!] Split channels disabled. It oversize.")
+			log.Println("[!] Split channels disabled. It is non standard PDF format")
 			break
 		}
 	}

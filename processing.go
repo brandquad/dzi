@@ -91,6 +91,7 @@ func Processing(url string, assetId int, c Config) (*Manifest, error) {
 	basename = uuid.New().String()
 	ext = strings.TrimPrefix(ext, ".")
 
+	log.Println("MaxCpuCount:", c.MaxCpuCount)
 	log.Println("Max Resolution:", c.Resolution)
 	log.Println("URL:", url)
 	log.Println("AssetId:", assetId)
