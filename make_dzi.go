@@ -71,7 +71,6 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 					filepath,
 					dziPath,
 					"--strip",
-					"--keep=none",
 					"--container=zip",
 					"--suffix",
 					fmt.Sprintf(".%s%s", c.TileFormat, c.TileSetting),
