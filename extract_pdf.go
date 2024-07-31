@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -41,43 +42,25 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 
 	if strings.TrimSpace(xmlString) != "" {
 
-		decoder := xml.NewDecoder(strings.NewReader(xmlString))
-		if err := decoder.Decode(&d); err != nil {
-			return nil, nil, err
-		}
-		decoder = xml.NewDecoder(strings.NewReader(xmlString))
-		if err := decoder.Decode(&eg); err != nil {
-			return nil, nil, err
-		}
-	}
-	//var egType, pdfType bool
+		func() {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Println("Error extracting page info:", err)
+					xmlString = ""
+				}
+			}()
 
-	//if wPt == 0 && hPt == 0 {
-	//
-	//	if d.W > 0 && d.H > 0 {
-	//		pdfType = true
-	//		d.W = d.W
-	//		d.H = d.H
-	//	} else if eg.W > 0 && eg.H > 0 {
-	//		egType = true
-	//
-	//		d.W = eg.W
-	//		d.H = eg.H
-	//
-	//		if eg.Unit == "mm" {
-	//			d.Unit = "Millimeters"
-	//		} else {
-	//			d.W /= pt2mm
-	//			d.H /= pt2mm
-	//			d.Unit = "Points"
-	//		}
-	//	} else {
-	//		return nil, nil, errors.New("page size not defined")
-	//	}
-	//} else {
-	//	d.W = wPt
-	//	d.H = hPt
-	//}
+			decoder := xml.NewDecoder(strings.NewReader(xmlString))
+			if err := decoder.Decode(&d); err != nil {
+				panic(err)
+			}
+			decoder = xml.NewDecoder(strings.NewReader(xmlString))
+			if err := decoder.Decode(&eg); err != nil {
+				panic(err)
+			}
+		}()
+
+	}
 
 	swatchMap := make(map[string]Swatch)
 	if len(eg.Inks) > 0 && len(d.SwatchGroups) == 0 {
@@ -87,58 +70,25 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 		}
 	}
 
-	//if d.Unit == "" {
-	//	d.Unit = "Millimeters"
-	//}
-	//
-	//if !egType && !pdfType {
-	//	switch d.Unit {
-	//	case "Millimeters":
-	//		d.W /= pt2mm
-	//		d.H /= pt2mm
-	//
-	//	case "Centimeters":
-	//		d.Unit = "cm"
-	//		d.W /= pt2cm
-	//		d.H /= pt2cm
-	//
-	//	case "Inches":
-	//		d.Unit = "in"
-	//		d.W /= pt2in
-	//		d.H /= pt2in
-	//
-	//	case "Points":
-	//		d.Unit = "mm"
-	//		d.W /= pt2mm
-	//		d.H /= pt2mm
-	//
-	//	}
-	//}
-	//
-	//switch d.Unit {
-	//case "Millimeters":
-	//	d.Unit = "mm"
-	//case "Centimeters":
-	//	d.Unit = "cm"
-	//case "Inches":
-	//	d.Unit = "in"
-	//case "Points":
-	//	d.Unit = "mm"
-	//}
-
 	if len(swatchMap) == 0 {
-		for _, s := range d.SwatchGroups {
+		for idx, s := range d.SwatchGroups {
 			var exists bool
-			for _, pn := range d.PlateNames {
-				sName := strings.TrimSpace(s.SwatchName)
-				pn = strings.TrimSpace(pn)
-				exists = pn == sName || strings.HasPrefix(sName, pn) || strings.HasSuffix(sName, pn)
-				if exists {
-					break
+
+			if !slices.Contains(d.PlateNames, s.SwatchName) {
+				exists = true
+			} else {
+				for _, pn := range d.PlateNames {
+					sName := strings.TrimSpace(s.SwatchName)
+					pn = strings.TrimSpace(pn)
+					exists = pn == sName || strings.HasPrefix(sName, pn) || strings.HasSuffix(sName, pn)
+					if exists {
+						break
+					}
 				}
 			}
 
 			if !exists {
+				d.SwatchGroups = append(d.SwatchGroups[:idx], d.SwatchGroups[idx+1:]...)
 				continue
 			}
 

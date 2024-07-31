@@ -50,19 +50,15 @@ func processSwatch(page *pageInfo, swatch *Swatch, colorizedFolder, bwFolder str
 		if err = ref.ToColorSpace(vips.InterpretationSRGB); err != nil {
 			return err
 		}
-		//log.Printf("To color space %s", time.Since(st))
 
 		mateRef, err = createImage(ref.Width(), ref.Height(), rgbMateColor)
 		if err != nil {
 			return err
 		}
 
-		//log.Printf("Create empy image %s", time.Since(st))
-
 		if err = mateRef.Composite(ref, vips.BlendModeScreen, 0, 0); err != nil {
 			return err
 		}
-		//log.Printf("Compose %s", time.Since(st))
 
 		if err = os.Remove(swatch.Filepath); err != nil {
 			return err
@@ -72,7 +68,6 @@ func processSwatch(page *pageInfo, swatch *Swatch, colorizedFolder, bwFolder str
 		if err = toPng(mateRef, outputFilepath); err != nil {
 			return err
 		}
-		//log.Printf("Make PNG %s", time.Since(st))
 
 		swatch.Filepath = outputFilepath
 
@@ -122,7 +117,8 @@ func colorize(pages []*pageInfo, _outputColorized, _outputBw, _leads1000, _cover
 	panicHandler := func(p interface{}) {
 		fmt.Printf("[!] Task panicked: %v", p)
 	}
-	pool := pond.New(c.MaxCpuCount, 1000, pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
+	//pool := pond.New(c.MaxCpuCount, 1000, pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
+	pool := pond.New(1, 1000, pond.MinWorkers(1), pond.PanicHandler(panicHandler))
 
 	for _, page := range pages {
 

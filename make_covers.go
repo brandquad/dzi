@@ -155,9 +155,6 @@ func collectLead(archive *zip.ReadCloser, files []string, folderPath, leadsRoot,
 		if err != nil {
 			return "", "", err
 		}
-		var x, y int
-		x = col * tileSize
-		y = row * tileSize
 
 		if tileRef.HasAlpha() {
 			// Remove alpha channel
@@ -171,7 +168,7 @@ func collectLead(archive *zip.ReadCloser, files []string, folderPath, leadsRoot,
 			}
 		}
 		// Insert tile to target image
-		if err = targetRef.Insert(tileRef, x, y, true, &vips.ColorRGBA{
+		if err = targetRef.Insert(tileRef, col*tileSize, row*tileSize, true, &vips.ColorRGBA{
 			R: 0,
 			G: 0,
 			B: 0,
