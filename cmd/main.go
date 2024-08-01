@@ -15,7 +15,7 @@ type Config struct {
 	S3Key              string  `envconfig:"DZI_S3_KEY" required:"true"`
 	S3Secret           string  `envconfig:"DZI_S3_SECRET" required:"true"`
 	S3Bucket           string  `envconfig:"DZI_BUCKET" required:"true" default:"dzi"`
-	TileSize           string  `envconfig:"DZI_TILE_SIZE" default:"255"`
+	TileSize           string  `envconfig:"DZI_TILE_SIZE" default:"1024"`
 	Overlap            string  `envconfig:"DZI_OVERLAP" default:"1"`
 	Resolution         int     `envconfig:"DZI_RESOLUTION" default:"600"`
 	MinResolution      int     `envconfig:"DZI_MIN_RESOLUTION" default:"200"`

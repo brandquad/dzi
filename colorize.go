@@ -74,7 +74,6 @@ func processSwatch(page *pageInfo, swatch *Swatch, colorizedFolder, bwFolder str
 		if ref, err = mateRef.Copy(); err != nil {
 			return err
 		}
-		//log.Printf("Make copy %s", time.Since(st))
 		mateRef.Close()
 
 	} else {

@@ -32,20 +32,15 @@ func extractText(filepath string, pageNum int) (string, error) {
 }
 
 func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swatch, error) {
-	//var wPt, hPt float64
-	//p := doc.GetPage(pageNum - 1)
-	//wPt, hPt = p.Size()
-
 	xmlString := doc.Info().Metadata
 	var d pdfMeta
 	var eg pdfEgMeta
 
 	if strings.TrimSpace(xmlString) != "" {
-
 		func() {
 			defer func() {
 				if err := recover(); err != nil {
-					log.Println("Error extracting page info:", err)
+					log.Printf("Error extracting page info, %d", pageNum+1)
 					xmlString = ""
 				}
 			}()
@@ -59,7 +54,6 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 				panic(err)
 			}
 		}()
-
 	}
 
 	swatchMap := make(map[string]Swatch)
@@ -72,6 +66,46 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 
 	if len(swatchMap) == 0 {
 		for idx, s := range d.SwatchGroups {
+			// Fix swatch name
+			//log.Println(strings.ToValidUTF8(s.SwatchName, ""))
+			//log.Println(utf8.ValidString(s.SwatchName))
+
+			codePoints := []rune(s.SwatchName)
+			fmt.Println(codePoints) // Output: [A r t i o s _ È „ O ‚ I ‡]
+
+			decoded := ""
+			for _, codePoint := range codePoints {
+				if codePoint >= 0x0400 && codePoint <= 0x04FF { // Cyrillic range
+					decoded += string(codePoint)
+				} else {
+					decoded += string(codePoint)
+				}
+			}
+
+			log.Println(decoded)
+
+			//runes := []rune(s.SwatchName)
+			//log.Println(runes)
+
+			//utf16.Decode(binary.BigEndian.Uint16([]byte(s.SwatchName)))
+			//codePoints, _ := binary.BigEndian.
+			//detector := chardet.NewTextDetector()
+			//log.Println(s.SwatchName)
+			//decoderMac := charmap.Windows1251.NewDecoder()
+			//r1, err := decoderMac.Bytes([]byte(s.SwatchName))
+			//if err != nil {
+			//	panic(err)
+			//}
+			//
+			//decoderCp1251 := charmap.Windows1251.NewEncoder()
+			//r2, err := decoderCp1251.Bytes(r1)
+			//if err != nil {
+			//	panic(err)
+			//}
+
+			//log.Println(r2, err)
+			//result, err = charmap.Windows1251.NewDecoder().String(result)
+			//log.Println(result, err)
 			var exists bool
 
 			if !slices.Contains(d.PlateNames, s.SwatchName) {
