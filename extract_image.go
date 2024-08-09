@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func extractImage(filename, basename, _output string, c Config) ([]*pageInfo, error) {
+func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, error) {
 	pages := make([]*pageInfo, 1)
 
 	ref, err := vips.LoadImageFromFile(filename, nil)

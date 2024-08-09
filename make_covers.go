@@ -16,7 +16,7 @@ import (
 )
 
 // makeCovers function to construct preview images through DZI tiles
-func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c Config) error {
+func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c *Config) error {
 	st := time.Now()
 	log.Println("[>] Make covers")
 

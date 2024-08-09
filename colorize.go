@@ -98,7 +98,7 @@ func prepareFolders(page *pageInfo, folderPrefix ...string) ([]string, error) {
 	return folders, nil
 }
 
-func colorize(pages []*pageInfo, _outputColorized, _outputBw, _leads1000, _covers string, c Config) error {
+func colorize(pages []*pageInfo, _outputColorized, _outputBw, _leads1000, _covers string, c *Config) error {
 	st := time.Now()
 	var ref, mateRef *vips.ImageRef
 	//var err error

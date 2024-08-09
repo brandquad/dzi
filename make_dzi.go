@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcome string, c Config) error {
+func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcome string, c *Config) error {
 
 	for padeIdx, page := range pages {
 		sourceFolder := path.Join(income, page.Prefix)

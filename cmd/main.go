@@ -33,8 +33,8 @@ type Config struct {
 	ICCProfileFilepath string  `envconfig:"ICC_PROFILE_PATH" default:"./icc/sRGB_Profile.icc"`
 }
 
-func (c Config) MakeDziConfig() dzi.Config {
-	return dzi.Config{
+func (c Config) MakeDziConfig() *dzi.Config {
+	return &dzi.Config{
 		S3Host:             c.S3Host,
 		S3Key:              c.S3Key,
 		S3Secret:           c.S3Secret,

@@ -82,7 +82,7 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 				}
 			}
 
-			log.Println(decoded)
+			//log.Println(decoded)
 
 			//runes := []rune(s.SwatchName)
 			//log.Println(runes)
@@ -161,7 +161,7 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 	}, swatchMap, nil
 }
 
-func extractPDF(filePath, baseName, outputFolder string, c Config) ([]*pageInfo, error) {
+func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo, error) {
 
 	// Render pages
 	pagesSizes, err := renderPdf(filePath, outputFolder, baseName, c)

@@ -50,7 +50,7 @@ func prepareTopFolders(folders ...string) error {
 	return nil
 }
 
-func Processing(url string, assetId int, c Config) (*Manifest, error) {
+func Processing(url string, assetId int, c *Config) (*Manifest, error) {
 
 	st := time.Now()
 	defer func() {

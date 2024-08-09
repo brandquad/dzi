@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func makeManifest(pages []*pageInfo, assetId int, c Config, url, basename, filename, tmpRoot, rangesPath string, startTime time.Time) (*Manifest, error) {
+func makeManifest(pages []*pageInfo, assetId int, c *Config, url, basename, filename, tmpRoot, rangesPath string, startTime time.Time) (*Manifest, error) {
 	st := time.Now()
 	log.Println("[>] Make manifest.json")
 	defer func() {

@@ -76,7 +76,7 @@ func lab2rgb(lab []float64) []int {
 	}
 }
 
-func syncToS3(assetId int, tmp string, c Config) error {
+func syncToS3(assetId int, tmp string, c *Config) error {
 	st := time.Now()
 	log.Println("[>] Copy to S3:", c.S3Host, c.S3Bucket)
 

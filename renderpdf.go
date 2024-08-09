@@ -31,7 +31,7 @@ type pageSize struct {
 }
 
 // getPagesDimensions collect pages dimensions and spots colors from PDF file
-func getPagesDimensions(fileName string, c Config) ([]*pageSize, error) {
+func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 	pages := make([]*pageSize, 0)
 
 	args := []string{
@@ -184,7 +184,7 @@ func getPagesDimensions(fileName string, c Config) ([]*pageSize, error) {
 	return pages, nil
 }
 
-func renderPdf(fileName, outputPrefix, basename string, c Config) ([]*pageSize, error) {
+func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize, error) {
 	st := time.Now()
 	defer func() {
 		log.Println("[*] Total render time:", time.Since(st))
@@ -202,6 +202,7 @@ func renderPdf(fileName, outputPrefix, basename string, c Config) ([]*pageSize, 
 
 		if (aspect < 0.4 || aspect > 1.6) && page.Dpi < 200 {
 			splitChannels = false
+			c.SplitChannels = false
 			log.Println("[!] Split channels disabled. It is non standard PDF format")
 			break
 		}
