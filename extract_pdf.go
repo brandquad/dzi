@@ -65,86 +65,59 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 	}
 
 	if len(swatchMap) == 0 {
-		for idx, s := range d.SwatchGroups {
-			// Fix swatch name
-			//log.Println(strings.ToValidUTF8(s.SwatchName, ""))
-			//log.Println(utf8.ValidString(s.SwatchName))
+		if len(d.SwatchGroups) > 0 {
+			for idx, s := range d.SwatchGroups {
 
-			codePoints := []rune(s.SwatchName)
-			fmt.Println(codePoints) // Output: [A r t i o s _ È „ O ‚ I ‡]
-
-			decoded := ""
-			for _, codePoint := range codePoints {
-				if codePoint >= 0x0400 && codePoint <= 0x04FF { // Cyrillic range
-					decoded += string(codePoint)
-				} else {
-					decoded += string(codePoint)
-				}
-			}
-
-			//log.Println(decoded)
-
-			//runes := []rune(s.SwatchName)
-			//log.Println(runes)
-
-			//utf16.Decode(binary.BigEndian.Uint16([]byte(s.SwatchName)))
-			//codePoints, _ := binary.BigEndian.
-			//detector := chardet.NewTextDetector()
-			//log.Println(s.SwatchName)
-			//decoderMac := charmap.Windows1251.NewDecoder()
-			//r1, err := decoderMac.Bytes([]byte(s.SwatchName))
-			//if err != nil {
-			//	panic(err)
-			//}
-			//
-			//decoderCp1251 := charmap.Windows1251.NewEncoder()
-			//r2, err := decoderCp1251.Bytes(r1)
-			//if err != nil {
-			//	panic(err)
-			//}
-
-			//log.Println(r2, err)
-			//result, err = charmap.Windows1251.NewDecoder().String(result)
-			//log.Println(result, err)
-			var exists bool
-
-			if !slices.Contains(d.PlateNames, s.SwatchName) {
-				exists = true
-			} else {
-				for _, pn := range d.PlateNames {
-					sName := strings.TrimSpace(s.SwatchName)
-					pn = strings.TrimSpace(pn)
-					exists = pn == sName || strings.HasPrefix(sName, pn) || strings.HasSuffix(sName, pn)
-					if exists {
-						break
+				codePoints := []rune(s.SwatchName) // Output: [A r t i o s _ È „ O ‚ I ‡]
+				decoded := ""
+				for _, codePoint := range codePoints {
+					if codePoint >= 0x0400 && codePoint <= 0x04FF { // Cyrillic range
+						decoded += string(codePoint)
+					} else {
+						decoded += string(codePoint)
 					}
 				}
-			}
 
-			if !exists {
-				d.SwatchGroups = append(d.SwatchGroups[:idx], d.SwatchGroups[idx+1:]...)
-				continue
-			}
+				var exists bool
 
-			var c []int
-			switch strings.ToUpper(s.Mode) {
-			case "LAB":
-				c = lab2rgb([]float64{s.L, s.A, s.B})
-			case "RGB":
-				c = []int{s.Red, s.Green, s.Blue}
-			case "CMYK":
-				c = cmyk2rgb([]float64{
-					s.Cyan,
-					s.Magenta,
-					s.Yellow,
-					s.Black},
-				)
-			}
-			if c != nil {
-				swatchMap[s.SwatchName] = Swatch{
-					Name: s.SwatchName,
-					RBG:  fmt.Sprintf("#%02x%02x%02x", c[0], c[1], c[2]),
-					Type: SpotComponent,
+				if !slices.Contains(d.PlateNames, s.SwatchName) {
+					exists = true
+				} else {
+					for _, pn := range d.PlateNames {
+						sName := strings.TrimSpace(s.SwatchName)
+						pn = strings.TrimSpace(pn)
+						exists = pn == sName || strings.HasPrefix(sName, pn) || strings.HasSuffix(sName, pn)
+						if exists {
+							break
+						}
+					}
+				}
+
+				if !exists {
+					d.SwatchGroups = append(d.SwatchGroups[:idx], d.SwatchGroups[idx+1:]...)
+					continue
+				}
+
+				var c []int
+				switch strings.ToUpper(s.Mode) {
+				case "LAB":
+					c = lab2rgb([]float64{s.L, s.A, s.B})
+				case "RGB":
+					c = []int{s.Red, s.Green, s.Blue}
+				case "CMYK":
+					c = cmyk2rgb([]float64{
+						s.Cyan,
+						s.Magenta,
+						s.Yellow,
+						s.Black},
+					)
+				}
+				if c != nil {
+					swatchMap[s.SwatchName] = Swatch{
+						Name: s.SwatchName,
+						RBG:  fmt.Sprintf("#%02x%02x%02x", c[0], c[1], c[2]),
+						Type: SpotComponent,
+					}
 				}
 			}
 		}
@@ -164,7 +137,7 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo, error) {
 
 	// Render pages
-	pagesSizes, err := renderPdf(filePath, outputFolder, baseName, c)
+	pagesSizes, backupSpots, err := renderPdf(filePath, outputFolder, baseName, c)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +165,7 @@ func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo
 			page.TextContent = textContent
 		}
 
-		page, err = pageProcessing(outputFolder, page, swatchMap)
+		page, err = pageProcessing(outputFolder, page, swatchMap, backupSpots)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +185,7 @@ func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo
 	return pages, nil
 }
 
-func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Swatch) (*pageInfo, error) {
+func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Swatch, backupSpots map[string][]int) (*pageInfo, error) {
 
 	entries, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
 	if err != nil {
@@ -269,7 +242,12 @@ func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Sw
 		}
 		if v, ok := swatchMap[swatchName]; !ok {
 			swatchInfo.Type = CmykComponent
-			swatchInfo.RBG = CMYK[strings.ToLower(swatchName)]
+			if v2, ok2 := backupSpots[swatchName]; ok2 {
+				swatchInfo.Type = SpotComponent
+				swatchInfo.RBG = fmt.Sprintf("#%02x%02x%02x", v2[0], v2[1], v2[2])
+			} else {
+				swatchInfo.RBG = CMYK[strings.ToLower(swatchName)]
+			}
 		} else {
 			swatchInfo.Type = SpotComponent
 			swatchInfo.RBG = v.RBG

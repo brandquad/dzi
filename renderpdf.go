@@ -184,14 +184,14 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 	return pages, nil
 }
 
-func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize, error) {
+func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize, map[string][]int, error) {
 	st := time.Now()
 	defer func() {
 		log.Println("[*] Total render time:", time.Since(st))
 	}()
 	pages, err := getPagesDimensions(fileName, c)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	log.Println("[!] Pages count:", len(pages))
@@ -214,6 +214,8 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 
 	pool := pond.New(c.MaxCpuCount, len(pages), pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
 
+	var backupSpots = make(map[string][]int)
+
 	for _, page := range pages {
 		pool.Submit(func() {
 			st := time.Now()
@@ -226,26 +228,33 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 			if err := os.MkdirAll(outputFolder, DefaultFolderPerm); err != nil {
 				panic(err)
 			}
-
+			var (
+				localBackupSpots map[string][]int
+				err              error
+			)
 			if splitChannels {
 				outputFilepath := fmt.Sprintf("%s/%s.tiff", outputFolder, basename)
-				if err := callGS(fileName, outputFilepath, page, "tiffsep"); err != nil {
+				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "tiffsep"); err != nil {
 					panic(err)
 				}
 			} else {
 				outputFilepath := fmt.Sprintf("%s/%s.png", outputFolder, basename)
-				if err := callGS(fileName, outputFilepath, page, "png16m"); err != nil {
+				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "png16m"); err != nil {
 					panic(err)
 				}
 			}
-
+			for k, v := range localBackupSpots {
+				if _, ok := backupSpots[k]; !ok {
+					backupSpots[k] = v
+				}
+			}
 		})
 	}
 
 	pool.StopAndWait()
 
 	if pool.FailedTasks() > 0 {
-		return nil, errors.New("error on PDF rendering")
+		return nil, nil, errors.New("error on PDF rendering")
 	}
-	return pages, nil
+	return pages, backupSpots, nil
 }

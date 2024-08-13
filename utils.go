@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -226,7 +227,7 @@ func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 }
 
 // callGS just run ghostscript
-func callGS(filename, output string, page *pageSize, device string) error {
+func callGS(filename, output string, page *pageSize, device string) (map[string][]int, error) {
 	log.Printf("[!] Effective DPI for page %d is %d", page.PageNum, page.Dpi)
 	args := []string{
 		"-q",
@@ -235,6 +236,7 @@ func callGS(filename, output string, page *pageSize, device string) error {
 		"-dSAFER",
 		"-dSubsetFonts=true",
 		"-dMaxBitmap=500000000",
+		"-dPrintSpotCMYK",
 		"-dAlignToPixels=1",
 		"-dGridFitTT=0",
 		"-dTextAlphaBits=4",
@@ -251,8 +253,33 @@ func callGS(filename, output string, page *pageSize, device string) error {
 		filename,
 	}
 
-	_, err := execCmd("gs", args...)
-	return err
+	cmdout, err := execCmd("gs", args...)
+	if err != nil {
+		return nil, err
+	}
+	var backupSpots = make(map[string][]int)
+
+	for _, line := range strings.Split(string(cmdout), "\n") {
+		if strings.HasPrefix(line, "%%SeparationColor:") {
+			line = strings.TrimPrefix(line, "%%SeparationColor: ")
+			params := strings.Split(line, " ")
+			log.Println(params)
+			spotName := strings.TrimSuffix(strings.TrimPrefix(params[0], "\""), "\"")
+			_C, _M, _Y, _K := params[4], params[5], params[6], params[7]
+			c, _ := strconv.ParseFloat(_C, 64)
+			m, _ := strconv.ParseFloat(_M, 64)
+			y, _ := strconv.ParseFloat(_Y, 64)
+			k, _ := strconv.ParseFloat(_K, 64)
+			c = c * 100.0 / 32760.0
+			m = m * 100.0 / 32760.0
+			y = y * 100.0 / 32760.0
+			k = k * 100.0 / 32760.0
+			cmyk := []float64{c, m, y, k}
+			rgb := cmyk2rgb(cmyk)
+			backupSpots[spotName] = rgb
+		}
+	}
+	return backupSpots, err
 }
 
 // esko2swatch convert Esko metadata to Swatch
