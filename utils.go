@@ -12,10 +12,13 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var re = regexp.MustCompile(`\"(?P<name>.*)\" .* ink = (?P<cmyk>.*) CMYK`)
 
 // cmyk2rgb converts a CMYK color value to RGB
 func cmyk2rgb(cmyk []float64) []int {
@@ -261,11 +264,21 @@ func callGS(filename, output string, page *pageSize, device string) (map[string]
 
 	for _, line := range strings.Split(string(cmdout), "\n") {
 		if strings.HasPrefix(line, "%%SeparationColor:") {
+
+			paramsMap := make(map[string]string)
 			line = strings.TrimPrefix(line, "%%SeparationColor: ")
-			params := strings.Split(line, " ")
-			log.Println(params)
-			spotName := strings.TrimSuffix(strings.TrimPrefix(params[0], "\""), "\"")
-			_C, _M, _Y, _K := params[4], params[5], params[6], params[7]
+
+			match := re.FindStringSubmatch(line)
+			for i, name := range re.SubexpNames() {
+				if i > 0 && i <= len(match) {
+					paramsMap[name] = match[i]
+				}
+			}
+
+			spotName := paramsMap["name"]
+			components := strings.Split(paramsMap["cmyk"], " ")
+
+			_C, _M, _Y, _K := components[0], components[1], components[2], components[3]
 			c, _ := strconv.ParseFloat(_C, 64)
 			m, _ := strconv.ParseFloat(_M, 64)
 			y, _ := strconv.ParseFloat(_Y, 64)
