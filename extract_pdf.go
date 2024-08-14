@@ -33,6 +33,7 @@ func extractText(filepath string, pageNum int) (string, error) {
 
 func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swatch, error) {
 	xmlString := doc.Info().Metadata
+
 	var d pdfMeta
 	var eg pdfEgMeta
 
