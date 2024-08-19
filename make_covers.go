@@ -74,12 +74,9 @@ func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c *Config) erro
 			sort.Slice(folders, func(i, j int) bool {
 				return folders[i].Num < folders[j].Num
 			})
-			// Reverse slice
-			//for i, j := 0, len(folders)-1; i < j; i, j = i+1, j-1 {
-			//	folders[i], folders[j] = folders[j], folders[i]
-			//}
 
 			// Check each level
+			exists := false
 			for _, f := range folders {
 				maxWidth := len(f.Files) * tileSize
 				if maxWidth >= 2000 {
@@ -90,10 +87,22 @@ func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c *Config) erro
 					}
 					swatch.CoverPath = coverPath
 					swatch.LeadPath = leadPath
+					exists = true
 					break
 				}
-
 			}
+			// Image source < 2000
+			// Get last folder
+			if !exists {
+				f := folders[len(folders)-1]
+				leadPath, coverPath, err := collectLead(archive, f.Files, f.Path, leadsRoot, coversRoot, page.Prefix, tileSize, coverSize)
+				if err != nil {
+					return err
+				}
+				swatch.CoverPath = coverPath
+				swatch.LeadPath = leadPath
+			}
+
 			archive.Close()
 		}
 	}
