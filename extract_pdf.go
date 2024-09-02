@@ -187,7 +187,10 @@ func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo
 }
 
 func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Swatch, backupSpots map[string][]int) (*pageInfo, error) {
-
+	var spotsBackUpExists []string
+	for k, _ := range backupSpots {
+		spotsBackUpExists = append(spotsBackUpExists, k)
+	}
 	entries, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
 	if err != nil {
 		return nil, err
@@ -224,14 +227,16 @@ func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Sw
 			continue
 		}
 
-		// Fix problem with equal spot and cmyk name (ex black1, yellow23)
-		for _, cmykname := range []string{"black", "cyan", "yellow", "magenta"} {
-			sw := strings.ToLower(swatchName)
-			postfix := strings.TrimPrefix(sw, cmykname)
-			if len(postfix) > 0 {
-				if _, err = strconv.Atoi(postfix); err == nil {
-					swatchName = strings.TrimSuffix(swatchName, postfix)
-					break
+		if !slices.Contains(spotsBackUpExists, swatchName) {
+			// Fix problem with equal spot and cmyk name (ex black1, yellow23)
+			for _, cmykname := range []string{"black", "cyan", "yellow", "magenta"} {
+				sw := strings.ToLower(swatchName)
+				postfix := strings.TrimPrefix(sw, cmykname)
+				if len(postfix) > 0 {
+					if _, err = strconv.Atoi(postfix); err == nil {
+						swatchName = strings.TrimSuffix(swatchName, postfix)
+						break
+					}
 				}
 			}
 		}
