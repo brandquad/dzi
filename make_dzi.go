@@ -53,7 +53,11 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 
 					_, err := execCmd("vips", "icc_transform", filepath, fmt.Sprintf("%s[Q=95]", jpegPath), c.ICCProfileFilepath)
 					if err != nil {
-						panic(err)
+						log.Printf("[!] Error icc_transform. Just skip and jpegsave.")
+						if _, err = execCmd("vips", "jpegsave", filepath, jpegPath); err != nil {
+							panic(err)
+						}
+						//panic(err)
 					}
 
 					if err = os.Remove(filepath); err != nil {
