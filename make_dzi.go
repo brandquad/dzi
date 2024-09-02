@@ -42,7 +42,7 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 
 				if sourceFileExt == ".tiff" && !isBW {
 
-					log.Printf("[*] Convert %s to SRGB with profile %s", filepath, c.ICCProfileFilepath)
+					log.Printf("[*] Convert %s to SRGB with profile !!!! %s", filepath, c.ICCProfileFilepath)
 
 					jpegFileName := fmt.Sprintf("%s.jpeg", sourceBasename)
 					jpegPath := path.Join(sourceFolder, jpegFileName)
