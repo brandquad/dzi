@@ -188,6 +188,7 @@ func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo
 
 func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Swatch, backupSpots map[string][]int) (*pageInfo, error) {
 	var spotsBackUpExists []string
+
 	for k := range backupSpots {
 		spotsBackUpExists = append(spotsBackUpExists, k)
 	}
