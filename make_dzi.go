@@ -42,7 +42,7 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 
 				if sourceFileExt == ".tiff" && !isBW {
 
-					log.Printf("[*] Convert %s to SRGB with profile %s", filepath, c.ICCProfileFilepath)
+					log.Printf("[*] Convert %s to SRGB with profile !!!! %s", filepath, c.ICCProfileFilepath)
 
 					jpegFileName := fmt.Sprintf("%s.jpeg", sourceBasename)
 					jpegPath := path.Join(sourceFolder, jpegFileName)
@@ -50,10 +50,15 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 					if c.DebugMode {
 						log.Printf("[D] vips icc_transform %s %s[Q=95] %s", filepath, jpegPath, c.ICCProfileFilepath)
 					}
-
+					log.Println("[D] Try convert")
 					_, err := execCmd("vips", "icc_transform", filepath, fmt.Sprintf("%s[Q=95]", jpegPath), c.ICCProfileFilepath)
 					if err != nil {
-						panic(err)
+						log.Println("[D] Convert error. ")
+						log.Printf("[!] Error icc_transform. Just skip and jpegsave.")
+						if _, err = execCmd("vips", "jpegsave", filepath, jpegPath); err != nil {
+							panic(err)
+						}
+						//panic(err)
 					}
 
 					if err = os.Remove(filepath); err != nil {
