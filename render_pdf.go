@@ -197,16 +197,6 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 	log.Println("[!] Pages count:", len(pages))
 
 	splitChannels := c.SplitChannels
-	//for _, page := range pages {
-	//	aspect := float64(page.WidthPx) / float64(page.HeightPx)
-	//
-	//	//if (aspect < 0.4 || aspect > 1.6) && page.Dpi < 200 {
-	//	//	splitChannels = false
-	//	//	c.SplitChannels = false
-	//	//	log.Println("[!] Split channels disabled. It is non standard PDF format")
-	//	//	break
-	//	//}
-	//}
 
 	panicHandler := func(p interface{}) {
 		fmt.Printf("[!] Task panicked: %v", p)
@@ -235,6 +225,9 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 			if splitChannels {
 				outputFilepath := fmt.Sprintf("%s/%s.tiff", outputFolder, basename)
 				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "tiffsep"); err != nil {
+					panic(err)
+				}
+				if _, err = callGS(fileName, outputFilepath, page, "tiff32nc"); err != nil {
 					panic(err)
 				}
 			} else {
