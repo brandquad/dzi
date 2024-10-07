@@ -273,6 +273,7 @@ func callGS(filename, output string, page *pageSize, device string) (map[string]
 	baseName := path.Base(output)
 	cleanBaseName := strings.TrimSuffix(baseName, path.Ext(baseName))
 
+	// Fix ME-83 and ME-85
 	for _, file := range files {
 		if file.Name() == baseName {
 			continue
