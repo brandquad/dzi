@@ -120,6 +120,12 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 
 			if int(dpi) < c.MinResolution {
 				dpi = float64(c.MinResolution)
+
+				// Fix ME-67. Extreme broken PDF size
+				if widthInches*dpi/3 > float64(c.MaxSizePixels) || heightInches*dpi/3 > float64(c.MaxSizePixels) {
+					dpi /= 3
+				}
+
 			}
 			if int(dpi) > c.MaxResolution {
 				dpi = float64(c.MaxResolution)
