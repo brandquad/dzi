@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/lucasb-eyer/go-colorful"
+	"golang.org/x/text/encoding/charmap"
 	"io"
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -16,8 +18,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
+var defaultDecoder = charmap.Windows1251.NewDecoder()
 var re = regexp.MustCompile(`\"(?P<name>.*)\" .* ink = (?P<cmyk>.*) CMYK`)
 
 // cmyk2rgb converts a CMYK color value to RGB
@@ -262,6 +266,38 @@ func callGS(filename, output string, page *pageSize, device string) (map[string]
 	}
 	var backupSpots = make(map[string][]int)
 
+	files, err := os.ReadDir(path.Dir(output))
+	if err != nil {
+		return nil, err
+	}
+	baseName := path.Base(output)
+	cleanBaseName := strings.TrimSuffix(baseName, path.Ext(baseName))
+
+	for _, file := range files {
+		if file.Name() == baseName {
+			continue
+		}
+		fileExt := path.Ext(file.Name())
+		spotName := strings.TrimSuffix(file.Name(), fileExt)
+		spotName = strings.TrimPrefix(spotName, cleanBaseName)
+		spotName = strings.TrimPrefix(spotName, "(")
+		spotName = strings.TrimSuffix(spotName, ")")
+
+		if strings.Contains(spotName, "%") {
+			// Need decode
+			spotName, _ = url.QueryUnescape(spotName)
+			out, _ := defaultDecoder.Bytes([]byte(spotName))
+			spotName = string(out)
+
+			// Restore file
+			fileName := path.Join(path.Dir(output), fmt.Sprintf("%s(%s)%s", cleanBaseName, spotName, fileExt))
+			oldFileName := path.Join(path.Dir(output), file.Name())
+			if _, err := execCmd("mv", oldFileName, fileName); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	for _, line := range strings.Split(string(cmdout), "\n") {
 		if strings.HasPrefix(line, "%%SeparationColor:") {
 
@@ -276,6 +312,16 @@ func callGS(filename, output string, page *pageSize, device string) (map[string]
 			}
 
 			spotName := paramsMap["name"]
+			spotNameBytes := []byte(spotName)
+
+			if !utf8.Valid(spotNameBytes) {
+				o, e := defaultDecoder.Bytes([]byte(spotName))
+				if e == nil {
+					spotName = string((o))
+				}
+
+			}
+
 			components := strings.Split(paramsMap["cmyk"], " ")
 
 			_C, _M, _Y, _K := components[0], components[1], components[2], components[3]
@@ -290,6 +336,7 @@ func callGS(filename, output string, page *pageSize, device string) (map[string]
 			cmyk := []float64{c, m, y, k}
 			rgb := cmyk2rgb(cmyk)
 			backupSpots[spotName] = rgb
+
 		}
 	}
 	return backupSpots, err
