@@ -5,7 +5,7 @@ import "regexp"
 var mathRegExp *regexp.Regexp
 
 func init() {
-	regExp, err := regexp.Compile(`(.*)\((.*)\)(.*)`)
+	regExp, err := regexp.Compile(`\((.*)\)`)
 	if err != nil {
 		panic(err)
 	}
@@ -17,5 +17,5 @@ func matchSwatch(in string) string {
 	if match == nil {
 		return ""
 	}
-	return match[2]
+	return match[1]
 }

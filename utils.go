@@ -287,8 +287,10 @@ func callGS(filename, output string, page *pageSize, device string) (map[string]
 		if strings.Contains(spotName, "%") {
 			// Need decode
 			spotName, _ = url.QueryUnescape(spotName)
-			out, _ := defaultDecoder.Bytes([]byte(spotName))
-			spotName = string(out)
+			if !utf8.Valid([]byte(spotName)) {
+				out, _ := defaultDecoder.Bytes([]byte(spotName))
+				spotName = string(out)
+			}
 
 			// Restore file
 			fileName := path.Join(path.Dir(output), fmt.Sprintf("%s(%s)%s", cleanBaseName, spotName, fileExt))

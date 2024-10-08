@@ -131,6 +131,7 @@ func colorize(pages []*pageInfo, _outputColorized, _outputBw, _leads1000, _cover
 		for _, swatch := range page.Swatches {
 			pool.Submit(func() {
 				if err := processSwatch(page, swatch, colorizedFolder, bwFolder); err != nil {
+					log.Println(err, swatch)
 					panic(err)
 				}
 			})
