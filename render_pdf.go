@@ -77,8 +77,7 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 			dimensions = strings.ReplaceAll(dimensions, ",", "")
 			dimensionsPair := strings.Split(dimensions, " ")
 
-			// Convert string to float64
-
+			// Fix rotated PDF files
 			wIdx := 0
 			hIdx := 1
 			if rotateFloat == 90.0 {
@@ -86,6 +85,7 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 				hIdx = 0
 			}
 
+			// Convert string to float64
 			widthFloat, err := strconv.ParseFloat(strings.TrimSpace(dimensionsPair[wIdx]), 64)
 			if err != nil {
 				return nil, err
