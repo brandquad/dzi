@@ -78,11 +78,19 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 			dimensionsPair := strings.Split(dimensions, " ")
 
 			// Convert string to float64
-			widthFloat, err := strconv.ParseFloat(strings.TrimSpace(dimensionsPair[0]), 64)
+
+			wIdx := 0
+			hIdx := 1
+			if rotateFloat == 90.0 {
+				wIdx = 1
+				hIdx = 0
+			}
+
+			widthFloat, err := strconv.ParseFloat(strings.TrimSpace(dimensionsPair[wIdx]), 64)
 			if err != nil {
 				return nil, err
 			}
-			heightFloat, err := strconv.ParseFloat(strings.TrimSpace(dimensionsPair[1]), 64)
+			heightFloat, err := strconv.ParseFloat(strings.TrimSpace(dimensionsPair[hIdx]), 64)
 			if err != nil {
 				return nil, err
 			}
@@ -135,6 +143,7 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 				widthPx = widthInches * dpi
 				heightPx = heightInches * dpi
 			}
+
 			ps = &pageSize{
 				PageNum:    i,
 				WidthPt:    widthFloat,
