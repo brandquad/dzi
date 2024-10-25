@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"github.com/brandquad/dzi"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -96,6 +97,8 @@ func main() {
 	}
 
 	log.Println(manifest)
+	buffer, _ := json.Marshal(manifest)
+	os.WriteFile("manifest.json", buffer, 0644)
 
 	//log.Println("Total time:", time.Since(st))
 }
