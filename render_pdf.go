@@ -8,9 +8,13 @@ import (
 	"log"
 	"math"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
+
+var lineRe = regexp.MustCompile(`(?m)(\d)\t\((\d \d \S)\):\t*\[(.*)\]`)
 
 type pageSize struct {
 	PageNum int
@@ -74,12 +78,48 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 	}
 	pages := make([]*pageSize, len(mudoc.Pages))
 
+	// get read mediabox dimensions
+	args = []string{
+		"info", "-M", fileName, "1-9999",
+	}
+	buff, err = execCmd("mutool", args...)
+	if err != nil {
+		return nil, err
+	}
+
+	realDimesionsMap := make(map[int]muBox)
+
+	for _, line := range strings.Split(string(buff), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		match := lineRe.FindAllStringSubmatch(line, -1)
+		if match != nil {
+			pageNumStr := match[0][1]
+			pageNum, _ := strconv.Atoi(pageNumStr)
+			dims := strings.Split(strings.TrimSpace(match[0][3]), " ")
+
+			var r, l, t, b float64
+			l, _ = strconv.ParseFloat(dims[0], 64)
+			b, _ = strconv.ParseFloat(dims[1], 64)
+			r, _ = strconv.ParseFloat(dims[2], 64)
+			t, _ = strconv.ParseFloat(dims[3], 64)
+			realDimesionsMap[pageNum] = muBox{
+				B: b,
+				L: l,
+				R: r,
+				T: t,
+			}
+		}
+	}
+
 	for idx, p := range mudoc.Pages {
 
 		var ps = &pageSize{
 			PageNum:  p.PageNum,
-			WidthPt:  p.MediaBox.R + math.Abs(p.MediaBox.L),
-			HeightPt: p.MediaBox.T + math.Abs(p.MediaBox.B),
+			WidthPt:  realDimesionsMap[p.PageNum].R + math.Abs(realDimesionsMap[p.PageNum].L),
+			HeightPt: realDimesionsMap[p.PageNum].T + math.Abs(realDimesionsMap[p.PageNum].B),
 			Rotate:   p.Rotate.Rotate,
 		}
 
