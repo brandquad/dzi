@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-var lineRe = regexp.MustCompile(`(?m)(\d)\t\((\d \d \S)\):\t*\[(.*)\]`)
+var lineRe = regexp.MustCompile(`(?m)^(\d).*\[(.*)\]`)
 
 type pageSize struct {
 	PageNum int
@@ -87,7 +87,7 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 		return nil, err
 	}
 
-	realDimesionsMap := make(map[int]muBox)
+	realDimensionsMap := make(map[int]muBox)
 
 	for _, line := range strings.Split(string(buff), "\n") {
 		line = strings.TrimSpace(line)
@@ -98,14 +98,14 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 		if match != nil {
 			pageNumStr := match[0][1]
 			pageNum, _ := strconv.Atoi(pageNumStr)
-			dims := strings.Split(strings.TrimSpace(match[0][3]), " ")
+			dims := strings.Split(strings.TrimSpace(match[0][2]), " ")
 
 			var r, l, t, b float64
 			l, _ = strconv.ParseFloat(dims[0], 64)
 			b, _ = strconv.ParseFloat(dims[1], 64)
 			r, _ = strconv.ParseFloat(dims[2], 64)
 			t, _ = strconv.ParseFloat(dims[3], 64)
-			realDimesionsMap[pageNum] = muBox{
+			realDimensionsMap[pageNum] = muBox{
 				B: b,
 				L: l,
 				R: r,
@@ -118,8 +118,8 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 
 		var ps = &pageSize{
 			PageNum:  p.PageNum,
-			WidthPt:  realDimesionsMap[p.PageNum].R + math.Abs(realDimesionsMap[p.PageNum].L),
-			HeightPt: realDimesionsMap[p.PageNum].T + math.Abs(realDimesionsMap[p.PageNum].B),
+			WidthPt:  realDimensionsMap[p.PageNum].R + math.Abs(realDimensionsMap[p.PageNum].L),
+			HeightPt: realDimensionsMap[p.PageNum].T + math.Abs(realDimensionsMap[p.PageNum].B),
 			Rotate:   p.Rotate.Rotate,
 		}
 
