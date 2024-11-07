@@ -149,8 +149,8 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 				continue
 			}
 
-			for k, _ := range pages {
-				realDimensionsMap[k] = muBox{
+			for _, p := range mudoc.Pages {
+				realDimensionsMap[p.PageNum] = muBox{
 					B: pHeight,
 					L: pWidth,
 					R: 0.0,
