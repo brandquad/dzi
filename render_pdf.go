@@ -114,6 +114,55 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 		}
 	}
 
+	if len(realDimensionsMap) == 0 {
+		// No results from mutool
+		// Try to get dimensions from pdfinfo
+
+		args = []string{
+			fileName,
+		}
+		buff, err = execCmd("pdfinfo", args...)
+		if err != nil {
+			return nil, err
+		}
+
+		re2 := regexp.MustCompile(`(\d+\.\d+)\s+x\s+(\d+\.\d+)`)
+
+		for _, line := range strings.Split(string(buff), "\n") {
+			line = strings.TrimSpace(line)
+			if len(line) == 0 {
+				continue
+			}
+			if !strings.HasPrefix(line, "Page size:") {
+				continue
+			}
+
+			matches := re2.FindStringSubmatch(line)
+
+			if len(matches) < 3 {
+				continue
+			}
+
+			pWidth, err1 := strconv.ParseFloat(matches[1], 64)
+			pHeight, err2 := strconv.ParseFloat(matches[2], 64)
+			if err1 != nil || err2 != nil {
+				continue
+			}
+
+			for k, _ := range pages {
+				realDimensionsMap[k] = muBox{
+					B: pHeight,
+					L: pWidth,
+					R: 0.0,
+					T: 0.0,
+				}
+			}
+
+			break
+		}
+
+	}
+
 	for idx, p := range mudoc.Pages {
 
 		var ps = &pageSize{
