@@ -314,9 +314,9 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "tiffsep", c); err != nil {
 					panic(err)
 				}
-				if _, err = callGS(fileName, outputFilepath, page, "tiff32nc", c); err != nil {
-					panic(err)
-				}
+				//if _, err = callGS(fileName, outputFilepath, page, "tiff32nc", c); err != nil {
+				//	panic(err)
+				//}
 			} else {
 				outputFilepath := fmt.Sprintf("%s/%s.png", outputFolder, basename)
 				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "png16m", c); err != nil {
