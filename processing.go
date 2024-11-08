@@ -32,6 +32,7 @@ type Config struct {
 	SplitChannels      bool
 	DebugMode          bool
 	CopyChannelsToS3   bool
+	Overprint          string
 	DefaultDPI         float64
 	MaxSizePixels      float64
 	MaxCpuCount        int

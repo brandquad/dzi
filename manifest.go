@@ -48,6 +48,7 @@ type Manifest struct {
 	Pages          []*Page   `json:"pages"`
 	Swatches       []*Swatch `json:"swatches,omitempty"`
 	SplitChannels  bool      `json:"split_channels"`
+	Overprint      string    `json:"overprint"`
 }
 
 func (b *Manifest) toMM(unit string, x float64) float64 {

@@ -311,15 +311,15 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 			)
 			if splitChannels {
 				outputFilepath := fmt.Sprintf("%s/%s.tiff", outputFolder, basename)
-				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "tiffsep"); err != nil {
+				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "tiffsep", c); err != nil {
 					panic(err)
 				}
-				if _, err = callGS(fileName, outputFilepath, page, "tiff32nc"); err != nil {
+				if _, err = callGS(fileName, outputFilepath, page, "tiff32nc", c); err != nil {
 					panic(err)
 				}
 			} else {
 				outputFilepath := fmt.Sprintf("%s/%s.png", outputFolder, basename)
-				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "png16m"); err != nil {
+				if localBackupSpots, err = callGS(fileName, outputFilepath, page, "png16m", c); err != nil {
 					panic(err)
 				}
 			}

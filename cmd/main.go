@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"github.com/brandquad/dzi"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -24,6 +23,7 @@ type Config struct {
 	CoverHeight        string  `envconfig:"DZI_COVER_H" default:"300"`
 	DebugMode          bool    `envconfig:"DZI_DEBUG" default:"false"`
 	SplitChannels      bool    `envconfig:"DZI_SPLIT_CHANNELS" default:"true"`
+	Overprint          string  `envconfig:"DZI_OVERPRINT" default:"/enable"`
 	HookUrl            string  `envconfig:"HOOK_URL"`
 	CopyChannelsToS3   bool    `envconfig:"DZI_COPY_CHANNELS" default:"false"`
 	MaxCpuCount        int     `envconfig:"MAX_CPU_COUNT" default:"4"`
@@ -48,6 +48,7 @@ func (c Config) MakeDziConfig() *dzi.Config {
 		SplitChannels:      c.SplitChannels,
 		DebugMode:          c.DebugMode,
 		CopyChannelsToS3:   c.CopyChannelsToS3,
+		Overprint:          c.Overprint,
 		DefaultDPI:         float64(c.Resolution),
 		MinResolution:      c.MinResolution,
 		MaxResolution:      c.MaxResolution,
@@ -97,8 +98,8 @@ func main() {
 	}
 
 	log.Println(manifest)
-	buffer, _ := json.Marshal(manifest)
-	os.WriteFile("manifest.json", buffer, 0644)
+	//buffer, _ := json.Marshal(manifest)
+	//os.WriteFile("manifest.json", buffer, 0644)
 
 	//log.Println("Total time:", time.Since(st))
 }

@@ -234,7 +234,7 @@ func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 }
 
 // callGS just run ghostscript
-func callGS(filename, output string, page *pageSize, device string) (map[string][]int, error) {
+func callGS(filename, output string, page *pageSize, device string, c *Config) (map[string][]int, error) {
 	log.Printf("[!] Effective DPI for page %d is %d", page.PageNum, page.Dpi)
 	args := []string{
 		"-q",
@@ -249,6 +249,7 @@ func callGS(filename, output string, page *pageSize, device string) (map[string]
 		"-dTextAlphaBits=4",
 		"-dUsePDFX3Profile=0",
 		"-dGraphicsAlphaBits=4",
+		fmt.Sprintf("-dOverprint=%s", c.Overprint),
 		fmt.Sprintf("-dMaxSpots=%d", len(page.Spots)),
 		fmt.Sprintf("-dFirstPage=%d", page.PageNum),
 		fmt.Sprintf("-dLastPage=%d", page.PageNum),

@@ -111,6 +111,7 @@ func makeManifest(pages []*pageInfo, assetId int, c *Config, url, basename, file
 		Pages:          manifestPages,
 		Swatches:       swatches,
 		SplitChannels:  c.SplitChannels,
+		Overprint:      c.Overprint,
 	}
 
 	return manifest, nil
