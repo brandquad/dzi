@@ -17,6 +17,12 @@ import (
 
 const DefaultFolderPerm = 0777
 
+const (
+	OverprintEnabled  = "/enable"
+	OverprintSimulate = "/simulate"
+	OverprintDisable  = "/disable"
+)
+
 type Config struct {
 	S3Host             string
 	S3Key              string
