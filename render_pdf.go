@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-var lineRe = regexp.MustCompile(`(?m)^(\d).*\[(.*)\]`)
+var lineRe = regexp.MustCompile(`(?m)^(\d+).*\[(.*)\]`)
 
 type pageSize struct {
 	PageNum int
