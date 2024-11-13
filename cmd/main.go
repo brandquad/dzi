@@ -23,7 +23,7 @@ type Config struct {
 	CoverHeight        string  `envconfig:"DZI_COVER_H" default:"300"`
 	DebugMode          bool    `envconfig:"DZI_DEBUG" default:"false"`
 	SplitChannels      bool    `envconfig:"DZI_SPLIT_CHANNELS" default:"true"`
-	Overprint          string  `envconfig:"DZI_OVERPRINT" default:"/disable"`
+	Overprint          string  `envconfig:"DZI_OVERPRINT" default:"/enable"`
 	HookUrl            string  `envconfig:"HOOK_URL"`
 	CopyChannelsToS3   bool    `envconfig:"DZI_COPY_CHANNELS" default:"false"`
 	MaxCpuCount        int     `envconfig:"MAX_CPU_COUNT" default:"4"`

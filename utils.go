@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -236,6 +237,10 @@ func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 // callGS just run ghostscript
 func callGS(filename, output string, page *pageSize, device string, c *Config) (map[string][]int, error) {
 	log.Printf("[!] Effective DPI for page %d is %d, dOverprint is %s, device is %s", page.PageNum, page.Dpi, c.Overprint, device)
+	var overprint string
+	if c.Overprint != "" {
+		overprint = fmt.Sprintf("-dOverprint=%s", c.Overprint)
+	}
 	args := []string{
 		"-q",
 		"-dBATCH",
@@ -249,7 +254,7 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 		"-dTextAlphaBits=4",
 		"-dUsePDFX3Profile=0",
 		"-dGraphicsAlphaBits=4",
-		fmt.Sprintf("-dOverprint=%s", c.Overprint),
+		overprint,
 		fmt.Sprintf("-dMaxSpots=%d", len(page.Spots)),
 		fmt.Sprintf("-dFirstPage=%d", page.PageNum),
 		fmt.Sprintf("-dLastPage=%d", page.PageNum),
@@ -260,6 +265,10 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 		fmt.Sprintf("-sDEVICE=%s", device),
 		filename,
 	}
+
+	args = slices.DeleteFunc(args, func(x string) bool {
+		return len(x) == 0
+	})
 
 	cmdout, err := execCmd("gs", args...)
 	if err != nil {
