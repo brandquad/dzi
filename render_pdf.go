@@ -167,8 +167,8 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 
 		var ps = &pageSize{
 			PageNum:  p.PageNum,
-			WidthPt:  realDimensionsMap[p.PageNum].R - math.Abs(realDimensionsMap[p.PageNum].L),
-			HeightPt: realDimensionsMap[p.PageNum].T - math.Abs(realDimensionsMap[p.PageNum].B),
+			WidthPt:  realDimensionsMap[p.PageNum].R + math.Abs(realDimensionsMap[p.PageNum].L),
+			HeightPt: realDimensionsMap[p.PageNum].T + math.Abs(realDimensionsMap[p.PageNum].B),
 			Rotate:   p.Rotate.Rotate,
 		}
 
