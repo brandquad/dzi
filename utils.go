@@ -274,6 +274,11 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 	if err != nil {
 		return nil, err
 	}
+
+	if device == "tiff32nc" {
+		return nil, nil
+	}
+
 	var backupSpots = make(map[string][]int)
 
 	files, err := os.ReadDir(path.Dir(output))
@@ -296,10 +301,16 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 
 		if strings.Contains(spotName, "%") {
 			// Need decode
-			spotName, _ = url.QueryUnescape(spotName)
-			if !utf8.Valid([]byte(spotName)) {
-				out, _ := defaultDecoder.Bytes([]byte(spotName))
-				spotName = string(out)
+			spotNameUnescape, _ := url.QueryUnescape(spotName)
+			if len(spotNameUnescape) > 0 {
+				if !utf8.Valid([]byte(spotNameUnescape)) {
+					out, _ := defaultDecoder.Bytes([]byte(spotNameUnescape))
+					spotName = string(out)
+				} else {
+					spotName = spotNameUnescape
+				}
+			} else {
+				spotName = spotNameUnescape
 			}
 
 			// Restore file
