@@ -33,6 +33,7 @@ type Config struct {
 	TileFormat         string  `envconfig:"DZI_TILE_FORMAT" default:"png"`
 	TileSetting        string  `envconfig:"DZI_TILE_SETTING" default:""`
 	ICCProfileFilepath string  `envconfig:"ICC_PROFILE_PATH" default:"./icc/sRGB_Profile.icc"`
+	GraphicsAlphaBits  int     `envconfig:"GRAPHICS_ALPHA_BITS" default:"4"`
 }
 
 func (c Config) MakeDziConfig() *dzi.Config {
@@ -61,6 +62,7 @@ func (c Config) MakeDziConfig() *dzi.Config {
 		ExtractText:        c.ExtractText,
 		TileFormat:         c.TileFormat,
 		TileSetting:        c.TileSetting,
+		GraphicsAlphaBits:  c.GraphicsAlphaBits,
 	}
 }
 

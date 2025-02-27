@@ -45,6 +45,7 @@ type Config struct {
 	ExtractText        bool
 	TileFormat         string
 	TileSetting        string
+	GraphicsAlphaBits  int
 }
 
 func prepareTopFolders(folders ...string) error {
