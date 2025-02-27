@@ -253,7 +253,7 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 		"-dGridFitTT=0",
 		"-dTextAlphaBits=4",
 		"-dUsePDFX3Profile=0",
-		"-dGraphicsAlphaBits=4",
+		fmt.Sprintf("-dGraphicsAlphaBits=%d", c.GraphicsAlphaBits),
 		overprint,
 		fmt.Sprintf("-dMaxSpots=%d", len(page.Spots)),
 		fmt.Sprintf("-dFirstPage=%d", page.PageNum),
