@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/alitto/pond"
 	"log"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -166,8 +167,8 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 
 		var ps = &pageSize{
 			PageNum:  p.PageNum,
-			WidthPt:  realDimensionsMap[p.PageNum].R - realDimensionsMap[p.PageNum].L,
-			HeightPt: realDimensionsMap[p.PageNum].T - realDimensionsMap[p.PageNum].B,
+			WidthPt:  math.Abs(realDimensionsMap[p.PageNum].R - realDimensionsMap[p.PageNum].L),
+			HeightPt: math.Abs(realDimensionsMap[p.PageNum].T - realDimensionsMap[p.PageNum].B),
 			Rotate:   p.Rotate.Rotate,
 		}
 
