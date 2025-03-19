@@ -272,6 +272,7 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 }
 
 func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize, map[string][]int, error) {
+
 	st := time.Now()
 	defer func() {
 		log.Println("[*] Total render time:", time.Since(st))

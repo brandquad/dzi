@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	dzi "github.com/brandquad/dzi/colorutils"
 	poppler2 "github.com/johbar/go-poppler"
 	"log"
 	"os"
@@ -100,11 +101,11 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 				var c []int
 				switch strings.ToUpper(s.Mode) {
 				case "LAB":
-					c = lab2rgb([]float64{s.L, s.A, s.B})
+					c = dzi.Lab2rgb([]float64{s.L, s.A, s.B})
 				case "RGB":
 					c = []int{s.Red, s.Green, s.Blue}
 				case "CMYK":
-					c = cmyk2rgb([]float64{
+					c = dzi.Cmyk2rgb([]float64{
 						s.Cyan,
 						s.Magenta,
 						s.Yellow,
@@ -190,14 +191,14 @@ func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Sw
 	for k := range backupSpots {
 		spotsBackUpExists = append(spotsBackUpExists, k)
 	}
-	entries, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
+	existsChannelFiles, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
 	if err != nil {
 		return nil, err
 	}
 
-	for _, entry := range entries {
-		var name = entry.Name()
-		var filePath = path.Join(outputFolder, info.Prefix, entry.Name())
+	for _, channelFile := range existsChannelFiles {
+		var name = channelFile.Name()
+		var filePath = path.Join(outputFolder, info.Prefix, channelFile.Name())
 
 		swatchName := matchSwatch(name)
 
@@ -225,17 +226,23 @@ func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Sw
 			Name:     swatchName,
 			NeedMate: true,
 		}
-		if v, ok := swatchMap[swatchName]; !ok {
-			swatchInfo.Type = CmykComponent
-			if v2, ok2 := backupSpots[swatchName]; ok2 {
-				swatchInfo.Type = SpotComponent
-				swatchInfo.RBG = fmt.Sprintf("#%02x%02x%02x", v2[0], v2[1], v2[2])
-			} else {
-				swatchInfo.RBG = CMYK[strings.ToLower(swatchName)]
-			}
-		} else {
+
+		if v, ok := backupSpots[swatchName]; ok {
 			swatchInfo.Type = SpotComponent
-			swatchInfo.RBG = v.RBG
+			swatchInfo.RBG = fmt.Sprintf("#%02x%02x%02x", v[0], v[1], v[2])
+		} else {
+			if vl2, okl2 := swatchMap[swatchName]; !okl2 {
+				swatchInfo.Type = CmykComponent
+				if vl3, ok3 := backupSpots[swatchName]; ok3 {
+					swatchInfo.Type = SpotComponent
+					swatchInfo.RBG = fmt.Sprintf("#%02x%02x%02x", vl3[0], vl3[1], vl3[2])
+				} else {
+					swatchInfo.RBG = CMYK[strings.ToLower(swatchName)]
+				}
+			} else {
+				swatchInfo.Type = SpotComponent
+				swatchInfo.RBG = vl2.RBG
+			}
 		}
 
 		if swatchName == "" {
