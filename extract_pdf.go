@@ -8,9 +8,7 @@ import (
 	poppler2 "github.com/johbar/go-poppler"
 	"log"
 	"os"
-	"path"
 	"slices"
-	"strconv"
 	"strings"
 )
 
@@ -137,7 +135,7 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo, error) {
 
 	// Render pages
-	pagesSizes, backupSpots, err := renderPdf(filePath, outputFolder, baseName, c)
+	pagesSizes, spots, err := renderPdf(filePath, outputFolder, baseName, c)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +163,7 @@ func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo
 			page.TextContent = textContent
 		}
 
-		page, err = pageProcessing(outputFolder, page, swatchMap, backupSpots)
+		page, err = pageProcessing(outputFolder, page, swatchMap, spots)
 		if err != nil {
 			return nil, err
 		}
@@ -185,71 +183,83 @@ func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo
 	return pages, nil
 }
 
-func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Swatch, backupSpots map[string][]int) (*pageInfo, error) {
-	var spotsBackUpExists []string
+func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Swatch, channels channelsMap) (*pageInfo, error) {
+	//var spotsBackUpExists []string
+	//
+	//for k := range channels {
+	//	spotsBackUpExists = append(spotsBackUpExists, k)
+	//}
 
-	for k := range backupSpots {
-		spotsBackUpExists = append(spotsBackUpExists, k)
-	}
-	existsChannelFiles, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
-	if err != nil {
-		return nil, err
-	}
+	//existsChannelFiles, err := os.ReadDir(path.Join(outputFolder, info.Prefix))
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	for _, channelFile := range existsChannelFiles {
-		var name = channelFile.Name()
-		var filePath = path.Join(outputFolder, info.Prefix, channelFile.Name())
+	for name, channel := range channels {
+		//var name = channel.Name()
+		//var filePath = path.Join(outputFolder, info.Prefix, channel.Name())
 
-		swatchName := matchSwatch(name)
+		//swatchName := matchSwatch(name)
 
-		if _, err = os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
-			log.Printf("[-] Skipping file %s", filePath)
+		if _, err := os.Stat(channel.Filepath); errors.Is(err, os.ErrNotExist) {
+			log.Printf("[-] Skipping file %s", channel.Filepath)
 			continue
 		}
 
-		if !slices.Contains(spotsBackUpExists, swatchName) {
-			// Fix problem with equal spot and cmyk name (ex black1, yellow23)
-			for _, cmykname := range []string{"black", "cyan", "yellow", "magenta"} {
-				sw := strings.ToLower(swatchName)
-				postfix := strings.TrimPrefix(sw, cmykname)
-				if len(postfix) > 0 {
-					if _, err = strconv.Atoi(postfix); err == nil {
-						swatchName = strings.TrimSuffix(swatchName, postfix)
-						break
-					}
-				}
-			}
-		}
+		//if !slices.Contains(spotsBackUpExists, swatchName) {
+		//	// Fix problem with equal spot and cmyk name (ex black1, yellow23)
+		//	for _, cmykname := range []string{"black", "cyan", "yellow", "magenta"} {
+		//		sw := strings.ToLower(swatchName)
+		//		postfix := strings.TrimPrefix(sw, cmykname)
+		//		if len(postfix) > 0 {
+		//			if _, err = strconv.Atoi(postfix); err == nil {
+		//				swatchName = strings.TrimSuffix(swatchName, postfix)
+		//				break
+		//			}
+		//		}
+		//	}
+		//}
 
 		swatchInfo := &Swatch{
-			Filepath: filePath,
-			Name:     swatchName,
+			Filepath: channel.Filepath,
+			OpsName:  channel.OpsName,
+			Name:     name,
 			NeedMate: true,
+			RBG:      channel.RgbComponents,
 		}
-
-		if v, ok := backupSpots[swatchName]; ok {
-			swatchInfo.Type = SpotComponent
-			swatchInfo.RBG = fmt.Sprintf("#%02x%02x%02x", v[0], v[1], v[2])
-		} else {
-			if vl2, okl2 := swatchMap[swatchName]; !okl2 {
-				swatchInfo.Type = CmykComponent
-				if vl3, ok3 := backupSpots[swatchName]; ok3 {
-					swatchInfo.Type = SpotComponent
-					swatchInfo.RBG = fmt.Sprintf("#%02x%02x%02x", vl3[0], vl3[1], vl3[2])
-				} else {
-					swatchInfo.RBG = CMYK[strings.ToLower(swatchName)]
-				}
-			} else {
-				swatchInfo.Type = SpotComponent
-				swatchInfo.RBG = vl2.RBG
-			}
-		}
-
-		if swatchName == "" {
+		if name == "Color" {
 			swatchInfo.Type = Final
-			swatchInfo.Name = "Color"
 			swatchInfo.NeedMate = false
 		}
+
+		//if v, ok := channels[name]; ok {
+		//	swatchInfo.Type = SpotComponent
+		//	swatchInfo.RBG = v.RgbComponents
+		//	swatchInfo.Filepath = v.Filepath
+		//	swatchInfo.Name = swatchName
+		//} else {
+		//
+		//	if vl2, okl2 := swatchMap[swatchName]; !okl2 {
+		//		swatchInfo.Type = CmykComponent
+		//
+		//		if vl3, ok3 := channels[swatchName]; ok3 {
+		//			swatchInfo.Type = SpotComponent
+		//			swatchInfo.RBG = vl3.RgbComponents
+		//			swatchInfo.Filepath = vl3.Filepath
+		//		} else {
+		//			swatchInfo.RBG = CMYK[strings.ToLower(swatchName)]
+		//		}
+		//	} else {
+		//		swatchInfo.Type = SpotComponent
+		//		swatchInfo.RBG = vl2.RBG
+		//	}
+		//}
+		//
+		//if swatchName == "" {
+		//	swatchInfo.Type = Final
+		//	swatchInfo.Name = "Color"
+		//	swatchInfo.NeedMate = false
+		//}
 
 		info.Swatches = append(info.Swatches, swatchInfo)
 	}

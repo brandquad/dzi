@@ -79,6 +79,7 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 	info.Swatches = append(info.Swatches, &Swatch{
 		Filepath: rgbOutput,
 		Name:     "Color",
+		OpsName:  "Color",
 		Type:     Final,
 		NeedMate: false,
 	})
@@ -115,6 +116,7 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 			info.Swatches = append(info.Swatches, &Swatch{
 				Filepath: outputPath,
 				Name:     swatchName,
+				OpsName:  swatchName,
 				RBG:      CMYK[strings.ToLower(swatchName)],
 				Type:     CmykComponent,
 				NeedMate: true,

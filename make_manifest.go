@@ -43,7 +43,7 @@ func makeManifest(pages []*pageInfo, assetId int, c *Config, url, basename, file
 			dziColorPath := strings.TrimPrefix(s.DziColorPath, tmpRoot)
 			dziBWPath := strings.TrimPrefix(s.DziBWPath, tmpRoot)
 
-			bwRangesPath := path.Join(rangesPath, fmt.Sprintf("bw_%d_%s.json", page.PageNumber, s.Name))
+			bwRangesPath := path.Join(rangesPath, fmt.Sprintf("bw_%d_%s.json", page.PageNumber, s.OpsName))
 
 			if len(s.DziBWRanges) > 0 {
 				buffer, err := json.Marshal(s.DziBWRanges)

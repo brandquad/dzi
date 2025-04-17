@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -175,8 +176,17 @@ func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 	return imageRef, nil
 }
 
+type channelsMap map[string]*channelFile
+
+type channelFile struct {
+	RgbComponents string
+	Filepath      string
+	OpsName       string
+	IsColor       bool
+}
+
 // callGS just run ghostscript
-func callGS(filename, output string, page *pageSize, device string, c *Config) (map[string][]int, error) {
+func callGS(filename, output string, page *pageSize, device string, c *Config) (channelsMap, error) {
 	log.Printf("[!] Effective DPI for page %d is %d, dOverprint is %s, device is %s", page.PageNum, page.Dpi, c.Overprint, device)
 	var overprint string
 	if c.Overprint != "" {
@@ -211,16 +221,16 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 		return len(x) == 0
 	})
 
-	cmdout, err := execCmd("gs", args...)
+	cmdOut, err := execCmd("gs", args...)
 	if err != nil {
 		return nil, err
 	}
 
-	if device == "tiff32nc" {
-		return nil, nil
-	}
+	var spots = make(channelsMap)
 
-	var backupSpots = make(map[string][]int)
+	if device == "tiff32nc" {
+		return spots, nil
+	}
 
 	files, err := os.ReadDir(path.Dir(output))
 	if err != nil {
@@ -231,9 +241,16 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 
 	// Fix ME-83 and ME-85
 	for _, file := range files {
+		spotFile := &channelFile{}
+
 		if file.Name() == baseName {
+			spotFile.OpsName = "Color"
+			spotFile.IsColor = true
+			spotFile.Filepath = filepath.Join(path.Dir(output), file.Name())
+			spots["Color"] = spotFile
 			continue
 		}
+
 		fileExt := path.Ext(file.Name())
 		spotName := strings.TrimSuffix(file.Name(), fileExt)
 		spotName = strings.TrimPrefix(spotName, cleanBaseName)
@@ -254,16 +271,32 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 				spotName = spotNameUnescape
 			}
 
+			spotNameForFile := spotName
+			if strings.Contains(spotNameForFile, "/") {
+				spotNameForFile = strings.Replace(spotNameForFile, "/", "-", -1)
+			}
+
 			// Restore file
-			fileName := path.Join(path.Dir(output), fmt.Sprintf("%s(%s)%s", cleanBaseName, spotName, fileExt))
+			fileName := path.Join(path.Dir(output), fmt.Sprintf("%s(%s)%s", cleanBaseName, spotNameForFile, fileExt))
 			oldFileName := path.Join(path.Dir(output), file.Name())
 			if _, err := execCmd("mv", oldFileName, fileName); err != nil {
 				return nil, err
 			}
+			spotFile.OpsName = spotNameForFile
+			spotFile.Filepath = fileName
+		} else {
+			spotFile.Filepath = path.Join(path.Dir(output), file.Name())
+			spotFile.OpsName = spotName
 		}
+
+		if v, ok := CMYK[strings.ToLower(spotName)]; ok {
+			spotFile.RgbComponents = v
+		}
+
+		spots[spotName] = spotFile
 	}
 
-	for _, line := range strings.Split(string(cmdout), "\n") {
+	for _, line := range strings.Split(string(cmdOut), "\n") {
 		if strings.HasPrefix(line, "%%SeparationColor:") {
 
 			paramsMap := make(map[string]string)
@@ -284,32 +317,33 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 				if e == nil {
 					spotName = string((o))
 				}
-
 			}
 
 			if v, ok := assets.Pantones[strings.ToLower(spotName)]; ok {
-				backupSpots[spotName] = v
+				spots[spotName].RgbComponents = rgb2hex(v)
 				continue
 			}
 
 			components := strings.Split(paramsMap["cmyk"], " ")
 
-			_C, _M, _Y, _K := components[0], components[1], components[2], components[3]
-			c, _ := strconv.ParseFloat(_C, 64)
-			m, _ := strconv.ParseFloat(_M, 64)
-			y, _ := strconv.ParseFloat(_Y, 64)
-			k, _ := strconv.ParseFloat(_K, 64)
-			c = c * 100.0 / 32760.0
-			m = m * 100.0 / 32760.0
-			y = y * 100.0 / 32760.0
-			k = k * 100.0 / 32760.0
-			cmyk := []float64{c, m, y, k}
-			rgb := dzi.Cmyk2rgb(cmyk)
-			backupSpots[spotName] = rgb
+			_c, _ := strconv.ParseFloat(components[0], 64)
+			_m, _ := strconv.ParseFloat(components[1], 64)
+			_y, _ := strconv.ParseFloat(components[2], 64)
+			_k, _ := strconv.ParseFloat(components[3], 64)
 
+			_c = _c * 100.0 / 32760.0
+			_m = _m * 100.0 / 32760.0
+			_y = _y * 100.0 / 32760.0
+			_k = _k * 100.0 / 32760.0
+
+			spots[spotName].RgbComponents = rgb2hex(dzi.Cmyk2rgb([]float64{_c, _m, _y, _k}))
 		}
 	}
-	return backupSpots, err
+	return spots, err
+}
+
+func rgb2hex(rgb []int) string {
+	return fmt.Sprintf("#%02x%02x%02x", rgb[0], rgb[1], rgb[2])
 }
 
 // esko2swatch convert Esko metadata to Swatch

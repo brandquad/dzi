@@ -31,6 +31,7 @@ type ZipRange struct {
 type Swatch struct {
 	Filepath       string              `json:"-"`
 	Name           string              `json:"name"`
+	OpsName        string              `json:"-"`
 	RBG            string              `json:"rgb"`
 	Type           SwatchType          `json:"type"`
 	NeedMate       bool                `json:"need_mate"`
