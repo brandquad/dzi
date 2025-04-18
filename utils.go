@@ -177,6 +177,7 @@ func createImage(w, h int, c colorful.Color) (*vips.ImageRef, error) {
 }
 
 type channelsMap map[string]*channelFile
+type pageChannels map[int]channelsMap
 
 type channelFile struct {
 	RgbComponents string

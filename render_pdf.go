@@ -271,7 +271,7 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 	return pages, nil
 }
 
-func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize, channelsMap, error) {
+func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize, pageChannels, error) {
 
 	st := time.Now()
 	defer func() {
@@ -292,7 +292,7 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 
 	pool := pond.New(c.MaxCpuCount, len(pages), pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
 
-	var backupSpots = make(channelsMap)
+	var backupSpots = make(pageChannels)
 
 	for _, page := range pages {
 		pool.Submit(func() {
@@ -313,14 +313,14 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 				if spots, err = callGS(fileName, outputFilepath, page, "tiffsep", c); err != nil {
 					panic(err)
 				}
+				var overprint = c.Overprint
 				if c.Overprint != "/simulate" {
-					var overprint = c.Overprint
 					c.Overprint = ""
-					if _, err = callGS(fileName, outputFilepath, page, "tiff32nc", c); err != nil {
-						panic(err)
-					}
-					c.Overprint = overprint
 				}
+				if _, err = callGS(fileName, outputFilepath, page, "tiff32nc", c); err != nil {
+					panic(err)
+				}
+				c.Overprint = overprint
 			} else {
 				outputFilepath := fmt.Sprintf("%s/%s.png", outputFolder, basename)
 				if spots, err = callGS(fileName, outputFilepath, page, "png16m", c); err != nil {
@@ -328,12 +328,13 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 				}
 			}
 
+			backupSpots[page.PageNum] = spots
 			// Append new spots to global
-			for k, v := range spots {
-				if _, ok := backupSpots[k]; !ok {
-					backupSpots[k] = v
-				}
-			}
+			//for k, v := range spots {
+			//	if _, ok := backupSpots[k]; !ok {
+			//		backupSpots[k] = v
+			//	}
+			//}
 		})
 	}
 

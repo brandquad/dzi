@@ -163,7 +163,7 @@ func extractPDF(filePath, baseName, outputFolder string, c *Config) ([]*pageInfo
 			page.TextContent = textContent
 		}
 
-		page, err = pageProcessing(outputFolder, page, swatchMap, spots)
+		page, err = pageProcessing(outputFolder, page, swatchMap, spots[pageIndex])
 		if err != nil {
 			return nil, err
 		}
@@ -206,26 +206,19 @@ func pageProcessing(outputFolder string, info *pageInfo, swatchMap map[string]Sw
 			continue
 		}
 
-		//if !slices.Contains(spotsBackUpExists, swatchName) {
-		//	// Fix problem with equal spot and cmyk name (ex black1, yellow23)
-		//	for _, cmykname := range []string{"black", "cyan", "yellow", "magenta"} {
-		//		sw := strings.ToLower(swatchName)
-		//		postfix := strings.TrimPrefix(sw, cmykname)
-		//		if len(postfix) > 0 {
-		//			if _, err = strconv.Atoi(postfix); err == nil {
-		//				swatchName = strings.TrimSuffix(swatchName, postfix)
-		//				break
-		//			}
-		//		}
-		//	}
-		//}
+		var rgbComponents = channel.RgbComponents
+		if swatchMap != nil {
+			if v, ok := swatchMap[name]; ok {
+				rgbComponents = v.RBG
+			}
+		}
 
 		swatchInfo := &Swatch{
 			Filepath: channel.Filepath,
 			OpsName:  channel.OpsName,
 			Name:     name,
 			NeedMate: true,
-			RBG:      channel.RgbComponents,
+			RBG:      rgbComponents,
 		}
 		if name == "Color" {
 			swatchInfo.Type = Final
