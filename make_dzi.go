@@ -78,7 +78,7 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 					dziPath,
 					"--strip",
 					"--container=zip",
-					"--depth one",
+					"--depth=one",
 					"--suffix",
 					fmt.Sprintf(".%s%s", c.TileFormat, c.TileSetting),
 					fmt.Sprintf("--vips-concurrency=%d", c.MaxCpuCount),
