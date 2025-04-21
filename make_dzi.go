@@ -71,12 +71,14 @@ func makeDZI(pool *pond.WorkerPool, isBW bool, pages []*pageInfo, income, outcom
 				defer func() {
 					log.Printf("[*] dzsave for %s , at %s", filepath, time.Since(st))
 				}()
+
 				dziPath = fmt.Sprintf("%s.zip", dziPath)
 				if _, err := execCmd("vips", "dzsave",
 					filepath,
 					dziPath,
 					"--strip",
 					"--container=zip",
+					"--depth one",
 					"--suffix",
 					fmt.Sprintf(".%s%s", c.TileFormat, c.TileSetting),
 					fmt.Sprintf("--vips-concurrency=%d", c.MaxCpuCount),
