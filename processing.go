@@ -46,6 +46,7 @@ type Config struct {
 	TileFormat         string
 	TileSetting        string
 	GraphicsAlphaBits  int
+	UsePDFX3           bool
 }
 
 func prepareTopFolders(folders ...string) error {

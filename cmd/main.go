@@ -34,6 +34,7 @@ type Config struct {
 	TileSetting        string  `envconfig:"DZI_TILE_SETTING" default:""`
 	ICCProfileFilepath string  `envconfig:"ICC_PROFILE_PATH" default:"./icc/sRGB_Profile.icc"`
 	GraphicsAlphaBits  int     `envconfig:"GRAPHICS_ALPHA_BITS" default:"4"`
+	UsePDFX3           bool    `envconfig:"DZI_USE_PDFX3" default:"false"`
 }
 
 func (c Config) MakeDziConfig() *dzi.Config {
@@ -63,6 +64,7 @@ func (c Config) MakeDziConfig() *dzi.Config {
 		TileFormat:         c.TileFormat,
 		TileSetting:        c.TileSetting,
 		GraphicsAlphaBits:  c.GraphicsAlphaBits,
+		UsePDFX3:           c.UsePDFX3,
 	}
 }
 

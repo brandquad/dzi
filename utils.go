@@ -189,9 +189,15 @@ type channelFile struct {
 // callGS just run ghostscript
 func callGS(filename, output string, page *pageSize, device string, c *Config) (channelsMap, error) {
 	log.Printf("[!] Effective DPI for page %d is %d, dOverprint is %s, device is %s", page.PageNum, page.Dpi, c.Overprint, device)
-	var overprint string
+	var (
+		overprint string
+		dUsePDFX3 string = "-dUsePDFX3Profile=0"
+	)
 	if c.Overprint != "" {
 		overprint = fmt.Sprintf("-dOverprint=%s", c.Overprint)
+	}
+	if c.UsePDFX3 {
+		dUsePDFX3 = "-dUsePDFX3Profile=1"
 	}
 	args := []string{
 		"-q",
@@ -204,7 +210,7 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 		"-dAlignToPixels=1",
 		"-dGridFitTT=0",
 		"-dTextAlphaBits=4",
-		"-dUsePDFX3Profile=0",
+		dUsePDFX3,
 		fmt.Sprintf("-dGraphicsAlphaBits=%d", c.GraphicsAlphaBits),
 		overprint,
 		fmt.Sprintf("-dMaxSpots=%d", len(page.Spots)),
