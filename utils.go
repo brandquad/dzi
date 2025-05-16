@@ -199,26 +199,35 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 	if c.UsePDFX3 {
 		dUsePDFX3 = "-dUsePDFX3Profile=1"
 	}
+
+	maxBitmap := "-dMaxBitmap=500000000"
+	maxSpots := fmt.Sprintf("-dMaxSpots=%d", len(page.Spots))
+	printSpotCmyk := "-dPrintSpotCMYK"
+
+	if device == "tiff32nc" {
+		maxBitmap = ""
+		maxSpots = ""
+		printSpotCmyk = ""
+	}
+
 	args := []string{
 		"-q",
 		"-dBATCH",
 		"-dNOPAUSE",
+		maxBitmap,
 		"-dSAFER",
 		"-dSubsetFonts=true",
-		"-dMaxBitmap=500000000",
-		"-dPrintSpotCMYK",
+		printSpotCmyk,
 		"-dAlignToPixels=1",
 		"-dGridFitTT=0",
 		"-dTextAlphaBits=4",
 		dUsePDFX3,
 		fmt.Sprintf("-dGraphicsAlphaBits=%d", c.GraphicsAlphaBits),
 		overprint,
-		fmt.Sprintf("-dMaxSpots=%d", len(page.Spots)),
+		maxSpots,
 		fmt.Sprintf("-dFirstPage=%d", page.PageNum),
 		fmt.Sprintf("-dLastPage=%d", page.PageNum),
 		fmt.Sprintf("-r%d", page.Dpi),
-		//fmt.Sprintf("-dDEVICEWIDTHPOINTS=%.02f", page.WidthPt),
-		//fmt.Sprintf("-dDEVIDEHEIGHTPOINTS=%.02f", page.HeightPt),
 		fmt.Sprintf("-sOutputFile=%s", output),
 		fmt.Sprintf("-sDEVICE=%s", device),
 		filename,
