@@ -35,6 +35,7 @@ type Config struct {
 	ICCProfileFilepath string  `envconfig:"ICC_PROFILE_PATH" default:"./icc/sRGB_Profile.icc"`
 	GraphicsAlphaBits  int     `envconfig:"GRAPHICS_ALPHA_BITS" default:"4"`
 	UsePDFX3           bool    `envconfig:"DZI_USE_PDFX3" default:"false"`
+	LibreOfficePath    string  `envconfig:"SOFFICE_PATH" default:"soffice"`
 }
 
 func (c Config) MakeDziConfig() *dzi.Config {
@@ -65,12 +66,11 @@ func (c Config) MakeDziConfig() *dzi.Config {
 		TileSetting:        c.TileSetting,
 		GraphicsAlphaBits:  c.GraphicsAlphaBits,
 		UsePDFX3:           c.UsePDFX3,
+		LibreOfficePath:    c.LibreOfficePath,
 	}
 }
 
 func main() {
-
-	//st := time.Now()
 
 	var c Config
 	if err := envconfig.Process("", &c); err != nil {
@@ -106,8 +106,4 @@ func main() {
 	}
 
 	log.Println(manifest)
-	//buffer, _ := json.Marshal(manifest)
-	//os.WriteFile("manifest.json", buffer, 0644)
-
-	//log.Println("Total time:", time.Since(st))
 }

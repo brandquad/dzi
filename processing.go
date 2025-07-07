@@ -47,6 +47,7 @@ type Config struct {
 	TileSetting        string
 	GraphicsAlphaBits  int
 	UsePDFX3           bool
+	LibreOfficePath    string
 }
 
 func prepareTopFolders(folders ...string) error {
@@ -111,6 +112,19 @@ func Processing(url string, assetId int, c *Config) (*Manifest, error) {
 		return nil, err
 	}
 	originalFilepath := baseFile.Name()
+
+	log.Println("Extension:", ext)
+
+	// convert pptx to pdf
+	if ext == "pptx" {
+		pdfFileName, err := convertPPTX(originalFilepath, basename, c)
+		if err != nil {
+			return nil, err
+		}
+		log.Println("PdfFileName:", pdfFileName)
+		originalFilepath = pdfFileName
+		c.SplitChannels = false
+	}
 
 	probe, err := vips.LoadImageFromFile(originalFilepath, nil)
 	if err != nil {
