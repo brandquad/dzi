@@ -42,6 +42,7 @@ func (c Config) MakeDziConfig() *dzi.Config {
 	if !slices.Contains([]string{dzi.OverprintEnabled, dzi.OverprintSimulate, dzi.OverprintDisable}, c.Overprint) {
 		log.Fatalln("overprint not correct")
 	}
+
 	return &dzi.Config{
 		S3Host:             c.S3Host,
 		S3Key:              c.S3Key,
