@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,8 @@ const (
 	OverprintSimulate = "/simulate"
 	OverprintDisable  = "/disable"
 )
+
+var presentationExts = []string{"pptx", "ppt", "pptm", "pps", "pot"}
 
 type Config struct {
 	S3Host             string
@@ -116,13 +119,15 @@ func Processing(url string, assetId int, c *Config) (*Manifest, error) {
 	log.Println("Extension:", ext)
 
 	// convert pptx to pdf
-	if ext == "pptx" {
+	if slices.Contains(presentationExts, ext) {
 		pdfFileName, err := convertPPTX(originalFilepath, basename, c)
 		if err != nil {
 			return nil, err
 		}
 		log.Println("PdfFileName:", pdfFileName)
 		originalFilepath = pdfFileName
+		c.MaxSizePixels = 5000
+		c.MaxResolution = 600
 		c.SplitChannels = false
 	}
 
