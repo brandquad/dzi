@@ -4,14 +4,16 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/alitto/pond"
 	"log"
 	"math"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/alitto/pond"
 )
 
 var lineRe = regexp.MustCompile(`(?m)^(\d+).*\[(.*)\]`)
@@ -293,6 +295,7 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 	pool := pond.New(c.MaxCpuCount, len(pages), pond.MinWorkers(c.MaxCpuCount), pond.PanicHandler(panicHandler))
 
 	var backupSpots = make(pageChannels)
+	backupSpotsMutex := &sync.Mutex{}
 
 	for _, page := range pages {
 		pool.Submit(func() {
@@ -327,14 +330,10 @@ func renderPdf(fileName, outputPrefix, basename string, c *Config) ([]*pageSize,
 					panic(err)
 				}
 			}
-
+			backupSpotsMutex.Lock()
 			backupSpots[page.PageNum] = spots
-			// Append new spots to global
-			//for k, v := range spots {
-			//	if _, ok := backupSpots[k]; !ok {
-			//		backupSpots[k] = v
-			//	}
-			//}
+			backupSpotsMutex.Unlock()
+
 		})
 	}
 
