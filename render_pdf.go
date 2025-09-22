@@ -128,7 +128,8 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 			return nil, err
 		}
 
-		re2 := regexp.MustCompile(`(\d+\.\d+)\s+x\s+(\d+\.\d+)`)
+		//re2 := regexp.MustCompile(`(\d+\.\d+)\s+x\s+(\d+\.\d+)`)
+		re3 := regexp.MustCompile(`(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)(?:\s*pts)?`)
 
 		for _, line := range strings.Split(string(buff), "\n") {
 			line = strings.TrimSpace(line)
@@ -139,11 +140,17 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 				continue
 			}
 
-			matches := re2.FindStringSubmatch(line)
+			matches := re3.FindStringSubmatch(line)
 
 			if len(matches) < 3 {
 				continue
 			}
+
+			//matches := re2.FindStringSubmatch(line)
+			//
+			//if len(matches) < 3 {
+			//	continue
+			//}
 
 			pWidth, err1 := strconv.ParseFloat(matches[1], 64)
 			pHeight, err2 := strconv.ParseFloat(matches[2], 64)
@@ -252,9 +259,18 @@ func getPagesDimensions(fileName string, c *Config) ([]*pageSize, error) {
 		return nil, err
 	}
 
+	// Remove lines not starting with "Page "
 	outputLines := strings.Split(string(buff), "\n")
+	filteredLines := make([]string, 0)
+	for _, line := range outputLines {
+		if strings.HasPrefix(line, "Page ") {
+			filteredLines = append(filteredLines, line)
+		}
+	}
+
+	// Map spots to pages
 	for _, page := range pages {
-		for _, line := range outputLines {
+		for _, line := range filteredLines {
 			if strings.HasPrefix(line, fmt.Sprintf("Page %d", page.PageNum)) {
 				triplet := strings.Split(line, "\t")
 				spotsStr := triplet[2][1 : len(triplet[2])-1]

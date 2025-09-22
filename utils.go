@@ -3,11 +3,6 @@ package dzi
 import (
 	"errors"
 	"fmt"
-	"github.com/brandquad/dzi/assets"
-	dzi "github.com/brandquad/dzi/colorutils"
-	"github.com/davidbyttow/govips/v2/vips"
-	"github.com/lucasb-eyer/go-colorful"
-	"golang.org/x/text/encoding/charmap"
 	"io"
 	"log"
 	"net/http"
@@ -22,6 +17,12 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/brandquad/dzi/assets"
+	dzi "github.com/brandquad/dzi/colorutils"
+	"github.com/davidbyttow/govips/v2/vips"
+	"github.com/lucasb-eyer/go-colorful"
+	"golang.org/x/text/encoding/charmap"
 )
 
 var defaultDecoder = charmap.Windows1251.NewDecoder()
@@ -201,7 +202,11 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 	}
 
 	maxBitmap := "-dMaxBitmap=500000000"
-	maxSpots := fmt.Sprintf("-dMaxSpots=%d", len(page.Spots))
+	maxSpots := ""
+	if page.Spots != nil {
+		maxSpots = fmt.Sprintf("-dMaxSpots=%d", len(page.Spots))
+	}
+
 	printSpotCmyk := "-dPrintSpotCMYK"
 
 	if device == "tiff32nc" {
