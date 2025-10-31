@@ -26,7 +26,7 @@ type ChannelV4 struct {
 
 type Page struct {
 	PageNum     int          `json:"page_num"`
-	Mode        string       `json:"mode"`
+	Mode        string       `json:"mode,omitempty"`
 	Size        DziSize      `json:"size"`
 	TextContent string       `json:"text_content"`
 	ChannelsV4  []*ChannelV4 `json:"channels_v4"`
