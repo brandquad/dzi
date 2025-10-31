@@ -108,7 +108,7 @@ func makeManifest(pages []*pageInfo, assetId int, c *Config, url, basename, file
 		TileFormat:     c.TileFormat,
 		CoverHeight:    c.CoverHeight,
 		Overlap:        c.Overlap,
-		Mode:           "CMYK",
+		Mode:           "Perpage",
 		Pages:          manifestPages,
 		Swatches:       swatches,
 		SplitChannels:  c.SplitChannels,
