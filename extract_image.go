@@ -24,7 +24,7 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 	case vips.InterpretationSRGB, vips.InterpretationRGB, vips.InterpretationRGB16:
 		colorModel = ColorModeRBG
 		// Disable split channels for RGB images
-		c.SplitChannels = false
+		//c.SplitChannels = false
 		//if err = ref.ToColorSpace(vips.InterpretationSRGB); err != nil {
 		//	return nil, err
 		//}
@@ -115,17 +115,33 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 		}
 		for idx, band := range bands {
 			var swatchName string
-			switch idx {
-			case 0:
-				swatchName = "Cyan"
-			case 1:
-				swatchName = "Magenta"
-			case 2:
-				swatchName = "Yellow"
-			case 3:
-				swatchName = "Black"
-			case 4:
-				swatchName = "Alpha"
+
+			if colorModel == ColorModeCMYK {
+
+				switch idx {
+				case 0:
+					swatchName = "Cyan"
+				case 1:
+					swatchName = "Magenta"
+				case 2:
+					swatchName = "Yellow"
+				case 3:
+					swatchName = "Black"
+				case 4:
+					swatchName = "Alpha"
+				}
+			}
+			if colorModel == ColorModeRBG {
+				switch idx {
+				case 0:
+					swatchName = "Red"
+				case 1:
+					swatchName = "Green"
+				case 2:
+					swatchName = "Blue"
+				case 3:
+					swatchName = "Alpha"
+				}
 			}
 
 			if err = band.Invert(); err != nil {
