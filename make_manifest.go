@@ -84,6 +84,7 @@ func makeManifest(pages []*pageInfo, assetId int, c *Config, url, basename, file
 			PageNum:     page.PageNumber,
 			Channels:    channelsArr,
 			ChannelsV4:  channels,
+			Mode:        string(page.ColorMode),
 			TextContent: page.TextContent,
 			Size: DziSize{
 				Width:  wStr,
