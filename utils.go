@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -309,7 +310,6 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 			spotFile.Filepath = path.Join(path.Dir(output), file.Name())
 			spotFile.OpsName = spotName
 		}
-
 		if v, ok := CMYK[strings.ToLower(spotName)]; ok {
 			spotFile.RgbComponents = v
 		}
@@ -409,7 +409,7 @@ func esko2swatch(name, egname, egtype, book string, nr, ng, nb float64) Swatch {
 	return Swatch{
 		Filepath: "",
 		Name:     swatchName,
-		RBG:      fmt.Sprintf("#%02x%02x%02x", int(R), int(G), int(B)),
+		RBG:      fmt.Sprintf("#%02x%02x%02x", int(math.Round(R)), int(math.Round(G)), int(math.Round(B))),
 		Type:     swatchType,
 		NeedMate: true,
 	}

@@ -4,12 +4,13 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	dzi "github.com/brandquad/dzi/colorutils"
-	poppler2 "github.com/johbar/go-poppler"
 	"log"
 	"os"
 	"slices"
 	"strings"
+
+	dzi "github.com/brandquad/dzi/colorutils"
+	poppler2 "github.com/johbar/go-poppler"
 )
 
 const pt2mm = 2.8346456692913
@@ -55,7 +56,8 @@ func getPageInfo(doc *poppler2.Document, pageNum int) (*pageInfo, map[string]Swa
 	}
 
 	swatchMap := make(map[string]Swatch)
-	if len(eg.Inks) > 0 && len(d.SwatchGroups) == 0 {
+	//if len(eg.Inks) > 0 && len(d.SwatchGroups) == 0 {
+	if len(eg.Inks) > 0 {
 		for _, e := range eg.Inks {
 			sw := esko2swatch(e.Name, e.EGName, e.Type, e.Book, e.R, e.G, e.B)
 			swatchMap[sw.Name] = sw

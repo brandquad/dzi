@@ -3,10 +3,11 @@ package dzi
 import (
 	"errors"
 	"fmt"
-	"github.com/davidbyttow/govips/v2/vips"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, error) {
@@ -17,16 +18,35 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 		return nil, err
 	}
 
+	var colorModel ColorMode
+
+	switch ref.ColorSpace() {
+	case vips.InterpretationSRGB, vips.InterpretationRGB, vips.InterpretationRGB16:
+		colorModel = ColorModeRBG
+		// Disable split channels for RGB images
+		c.SplitChannels = false
+		//if err = ref.ToColorSpace(vips.InterpretationSRGB); err != nil {
+		//	return nil, err
+		//}
+		break
+	case vips.InterpretationCMYK:
+		colorModel = ColorModeCMYK
+		break
+	default:
+		return nil, errors.New("unsupported color space")
+	}
+
+	//log.Println(colorModel)
+
 	info := &pageInfo{
-		Prefix:      "page_1",
-		PageNumber:  1,
-		Width:       float64(ref.Width()),
-		Height:      float64(ref.Height()),
-		Unit:        "px",
-		ColorMode:   ColorModeCMYK,
-		TextContent: "",
-		Swatches:    make([]*Swatch, 0),
-		Dpi:         int(c.DefaultDPI),
+		Prefix:     "page_1",
+		PageNumber: 1,
+		Width:      float64(ref.Width()),
+		Height:     float64(ref.Height()),
+		Unit:       "px",
+		ColorMode:  colorModel,
+		Swatches:   make([]*Swatch, 0),
+		Dpi:        int(c.DefaultDPI),
 	}
 	output := path.Join(_output, info.Prefix)
 
@@ -34,8 +54,10 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 		return nil, err
 	}
 
-	var refRGB *vips.ImageRef
+	refRGB, err := ref.Copy()
+	if err != nil {
 
+	}
 	defer func() {
 		if refRGB != nil {
 			refRGB.Close()
@@ -43,39 +65,41 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 		ref.Close()
 	}()
 
-	switch ref.ColorSpace() {
-	case vips.InterpretationSRGB, vips.InterpretationRGB, vips.InterpretationRGB16:
-		if refRGB, err = ref.Copy(); err != nil {
-			return nil, err
-		}
-
+	if colorModel == ColorModeCMYK {
 		if err = refRGB.ToColorSpace(vips.InterpretationSRGB); err != nil {
 			return nil, err
 		}
-
-		if err = ref.TransformICCProfile(c.ICCProfileFilepath); err != nil {
-			return nil, err
-		}
-		if err = ref.ToColorSpace(vips.InterpretationCMYK); err != nil {
-			return nil, err
-		}
-		break
-	case vips.InterpretationCMYK:
-		if refRGB, err = ref.Copy(); err != nil {
-			return nil, err
-		}
-		if err = refRGB.ToColorSpace(vips.InterpretationSRGB); err != nil {
-			return nil, err
-		}
-
-		break
-	default:
-		return nil, errors.New("unsupported color space")
 	}
+
+	//switch colorModel {
+	//case ColorModeRBG:
+	//	//if err = ref.TransformICCProfile(c.ICCProfileFilepath); err != nil {
+	//	//	return nil, err
+	//	//}
+	//	//if err = ref.ToColorSpace(vips.InterpretationCMYK); err != nil {
+	//	//	return nil, err
+	//	//}
+	//	break
+	//case ColorModeCMYK:
+	//	//	if refRGB, err = ref.Copy(); err != nil {
+	//	//		return nil, err
+	//	//	}
+	//	//	if err = refRGB.ToColorSpace(vips.InterpretationSRGB); err != nil {
+	//	//		return nil, err
+	//	//	}
+	//	break
+	//	//default:
+	//	//	return nil, errors.New("unsupported color space")
+	//}
+
+	//log.Println(refRGB.ColorSpace())
+
 	rgbOutput := path.Join(output, fmt.Sprintf("%s.tiff", basename))
+
 	if err = toTiff(refRGB, rgbOutput); err != nil {
 		return nil, err
 	}
+
 	info.Swatches = append(info.Swatches, &Swatch{
 		Filepath: rgbOutput,
 		Name:     "Color",
