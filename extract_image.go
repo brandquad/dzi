@@ -130,6 +130,9 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 				case 4:
 					swatchName = "Alpha"
 				}
+				if err = band.Invert(); err != nil {
+					return nil, err
+				}
 			}
 			if colorModel == ColorModeRBG {
 				switch idx {
@@ -142,10 +145,6 @@ func extractImage(filename, basename, _output string, c *Config) ([]*pageInfo, e
 				case 3:
 					swatchName = "Alpha"
 				}
-			}
-
-			if err = band.Invert(); err != nil {
-				return nil, err
 			}
 
 			outputPath := path.Join(output, fmt.Sprintf("%s(%s).tiff", basename, swatchName))
