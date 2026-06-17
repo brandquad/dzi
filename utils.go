@@ -202,7 +202,8 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 		dUsePDFX3 = "-dUsePDFX3Profile=1"
 	}
 
-	maxBitmap := "-dMaxBitmap=500000000"
+	//maxBitmap := "-dMaxBitmap=500000000"
+	maxBitmap := "" // Fix ME-2728
 	maxSpots := ""
 	if page.Spots != nil {
 		maxSpots = fmt.Sprintf("-dMaxSpots=%d", len(page.Spots))

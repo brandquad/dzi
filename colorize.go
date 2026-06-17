@@ -56,7 +56,14 @@ func processSwatch(page *pageInfo, swatch *Swatch, colorizedFolder, bwFolder str
 			return err
 		}
 
-		if err = mateRef.Composite(ref, vips.BlendModeScreen, 0, 0); err != nil {
+		var blendMode vips.BlendMode
+		if page.ColorMode == ColorModeRBG {
+			blendMode = vips.BlendModeMultiply
+		} else {
+			blendMode = vips.BlendModeScreen
+		}
+
+		if err = mateRef.Composite(ref, blendMode, 0, 0); err != nil {
 			return err
 		}
 
