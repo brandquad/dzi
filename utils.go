@@ -279,6 +279,7 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 		spotName = strings.TrimPrefix(spotName, cleanBaseName)
 		spotName = strings.TrimPrefix(spotName, "(")
 		spotName = strings.TrimSuffix(spotName, ")")
+		spotName = strings.ReplaceAll(spotName, "\n", "")
 
 		if strings.Contains(spotName, "%") {
 			// Need decode
@@ -317,6 +318,8 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 
 		spots[spotName] = spotFile
 	}
+
+	cmdOut = []byte(strings.ReplaceAll(string(cmdOut), "\n\n\"", "\""))
 
 	for _, line := range strings.Split(string(cmdOut), "\n") {
 		if strings.HasPrefix(line, "%%SeparationColor:") {

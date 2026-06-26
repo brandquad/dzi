@@ -25,9 +25,9 @@ type Config struct {
 	CoverHeight        string  `envconfig:"DZI_COVER_H" default:"300"`
 	DebugMode          bool    `envconfig:"DZI_DEBUG" default:"false"`
 	SplitChannels      bool    `envconfig:"DZI_SPLIT_CHANNELS" default:"true"`
-	Overprint          string  `envconfig:"DZI_OVERPRINT" default:"/enable"`
+	Overprint          string  `envconfig:"DZI_OVERPRINT" default:"/simulate"`
 	HookUrl            string  `envconfig:"HOOK_URL"`
-	CopyChannelsToS3   bool    `envconfig:"DZI_COPY_CHANNELS" default:"false"`
+	CopyChannelsToS3   bool    `envconfig:"DZI_COPY_CHANNELS" default:"true"`
 	MaxCpuCount        int     `envconfig:"MAX_CPU_COUNT" default:"4"`
 	MaxSizePixels      float64 `envconfig:"MAX_SIZE_PIXELS" default:"15000"`
 	ExtractText        bool    `envconfig:"DZI_EXTRACT_TEXT" default:"true"`
@@ -35,7 +35,7 @@ type Config struct {
 	TileSetting        string  `envconfig:"DZI_TILE_SETTING" default:""`
 	ICCProfileFilepath string  `envconfig:"ICC_PROFILE_PATH" default:"./icc/sRGB_Profile.icc"`
 	GraphicsAlphaBits  int     `envconfig:"GRAPHICS_ALPHA_BITS" default:"4"`
-	UsePDFX3           bool    `envconfig:"DZI_USE_PDFX3" default:"false"`
+	UsePDFX3           bool    `envconfig:"DZI_USE_PDFX3" default:"true"`
 	LibreOfficePath    string  `envconfig:"SOFFICE_PATH" default:"soffice"`
 	//SendToAnalyzer     bool    `envconfig:"SEND_TO_ANALYZER" default:"false"`
 }
