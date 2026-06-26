@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
-	"github.com/brandquad/dzi"
-	"github.com/davidbyttow/govips/v2/vips"
-	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
 	"slices"
 	"strconv"
+
+	"github.com/brandquad/dzi"
+	"github.com/davidbyttow/govips/v2/vips"
+	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
@@ -36,6 +37,7 @@ type Config struct {
 	GraphicsAlphaBits  int     `envconfig:"GRAPHICS_ALPHA_BITS" default:"4"`
 	UsePDFX3           bool    `envconfig:"DZI_USE_PDFX3" default:"false"`
 	LibreOfficePath    string  `envconfig:"SOFFICE_PATH" default:"soffice"`
+	//SendToAnalyzer     bool    `envconfig:"SEND_TO_ANALYZER" default:"false"`
 }
 
 func (c Config) MakeDziConfig() *dzi.Config {
@@ -68,6 +70,7 @@ func (c Config) MakeDziConfig() *dzi.Config {
 		GraphicsAlphaBits:  c.GraphicsAlphaBits,
 		UsePDFX3:           c.UsePDFX3,
 		LibreOfficePath:    c.LibreOfficePath,
+		//SendToAnalyzer:     c.SendToAnalyzer,
 	}
 }
 

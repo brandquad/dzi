@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/alitto/pond"
-	"github.com/davidbyttow/govips/v2/vips"
-	"github.com/google/uuid"
 	"log"
 	"os"
 	"path"
@@ -14,6 +11,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/alitto/pond"
+	"github.com/davidbyttow/govips/v2/vips"
+	"github.com/google/uuid"
 )
 
 const DefaultFolderPerm = 0777
@@ -51,6 +52,7 @@ type Config struct {
 	GraphicsAlphaBits  int
 	UsePDFX3           bool
 	LibreOfficePath    string
+	//SendToAnalyzer     bool
 }
 
 func prepareTopFolders(folders ...string) error {
