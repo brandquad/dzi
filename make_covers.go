@@ -3,8 +3,6 @@ package dzi
 import (
 	"archive/zip"
 	"fmt"
-	"github.com/davidbyttow/govips/v2/vips"
-	"github.com/lucasb-eyer/go-colorful"
 	"log"
 	"os"
 	"path"
@@ -13,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/davidbyttow/govips/v2/vips"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 // makeCovers function to construct preview images through DZI tiles
@@ -103,7 +104,7 @@ func makeCovers(pages []*pageInfo, leadsRoot, coversRoot string, c *Config) erro
 				swatch.LeadPath = leadPath
 			}
 
-			archive.Close()
+			_ = archive.Close()
 		}
 	}
 
@@ -177,12 +178,7 @@ func collectLead(archive *zip.ReadCloser, files []string, folderPath, leadsRoot,
 			}
 		}
 		// Insert tile to target image
-		if err = targetRef.Insert(tileRef, col*tileSize, row*tileSize, true, &vips.ColorRGBA{
-			R: 0,
-			G: 0,
-			B: 0,
-			A: 0,
-		}); err != nil {
+		if err = targetRef.Insert(tileRef, col*tileSize, row*tileSize, true, nil); err != nil {
 			return "", "", err
 		}
 	}
