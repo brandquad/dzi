@@ -227,7 +227,6 @@ func callGS(filename, output string, page *pageSize, device string, c *Config) (
 		printSpotCmyk,
 		"-dAlignToPixels=1",
 		"-dGridFitTT=0",
-		"-dUseBigTIFF=true",
 		"-dTextAlphaBits=4",
 		dUsePDFX3,
 		fmt.Sprintf("-dGraphicsAlphaBits=%d", c.GraphicsAlphaBits),
