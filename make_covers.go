@@ -176,13 +176,9 @@ func collectLead(archive *zip.ReadCloser, files []string, folderPath, leadsRoot,
 				return "", "", err
 			}
 		}
-		// Insert tile to target image
-		if err = targetRef.Insert(tileRef, col*tileSize, row*tileSize, true, &vips.ColorRGBA{
-			R: 0,
-			G: 0,
-			B: 0,
-			A: 0,
-		}); err != nil {
+		// Use the default black background: govips 2.18 passes an explicit
+		// ColorRGBA as four bands, which is incompatible with this RGB image.
+		if err = targetRef.Insert(tileRef, col*tileSize, row*tileSize, true, nil); err != nil {
 			return "", "", err
 		}
 	}
