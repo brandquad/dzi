@@ -2,3 +2,6 @@
 .env
 bin
 _tmp
+.DS_Store
+**/.DS_Store
+*_test.go
